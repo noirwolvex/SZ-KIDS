@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import { ToastContainer, showToast } from '@/components/ui';
 import Home from '@/pages/Home';
+import SpaceZoneHub from '@/pages/SpaceZoneHub';
 import GameZone from '@/pages/GameZone';
 import Coloring from '@/pages/Coloring';
 import Achievements from '@/pages/Achievements';
@@ -82,6 +83,7 @@ const GAME_COMPONENTS: Record<string, (props: GameProps) => JSX.Element> = {
 
 export default function App() {
   const [page, setPage] = useState<Page>('home');
+  const [platformHubOpen, setPlatformHubOpen] = useState(true);
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
   const [confetti, setConfetti] = useState(false);
@@ -93,6 +95,12 @@ export default function App() {
     setPage(p as Page);
     setActiveGame(null);
     setActiveLesson(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const enterCurrentExperience = useCallback(() => {
+    setPlatformHubOpen(false);
+    setPage('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -182,6 +190,14 @@ export default function App() {
   if (authLoading) return <FullPageSpinner label="Loading WonderKids..." />;
   if (!session) return <AuthScreen />;
 
+  if (platformHubOpen) {
+    return (
+      <BackgroundMusic>
+        <SpaceZoneHub onOpenPlatform={enterCurrentExperience} />
+      </BackgroundMusic>
+    );
+  }
+
   return (
     <BackgroundMusic>
       <div className="min-h-screen">
@@ -214,7 +230,7 @@ export default function App() {
               initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
               animate={{ opacity: 1, backdropFilter: 'blur(12px)' }}
               exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 1, 1] }}
               className="fixed inset-0 z-50"
             >
               <motion.div
