@@ -152,7 +152,6 @@ export default function AuthScreen() {
             </AnimatePresence>
 
             <Button
-              type="submit"
               variant="primary"
               size="lg"
               disabled={loading}
