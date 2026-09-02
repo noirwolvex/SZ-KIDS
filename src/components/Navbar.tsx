@@ -31,10 +31,10 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 pt-2 sm:pt-3"
+        className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 lg:px-6 pt-2 sm:pt-3"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.5rem)' }}
       >
-        <nav className="mx-auto max-w-7xl glass-strong rounded-2xl sm:rounded-3xl shadow-soft px-3 sm:px-4 py-2.5 flex items-center gap-3 lg:gap-5 min-w-0">
+        <nav className="mx-auto w-full max-w-[1600px] glass-strong rounded-2xl sm:rounded-3xl shadow-soft px-3 sm:px-4 lg:px-5 py-2.5 flex items-center gap-3 lg:gap-5 min-w-0">
           <button
             onClick={() => onNavigate('home')}
             className="flex items-center gap-2 sm:gap-2.5 group shrink-0 min-w-fit"
@@ -214,7 +214,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                className="md:hidden mx-auto max-w-7xl mt-2 glass-strong rounded-3xl shadow-soft-lg p-3 flex flex-col gap-2"
+                className="md:hidden mx-auto w-full max-w-[1600px] mt-2 glass-strong rounded-3xl shadow-soft-lg p-3 flex flex-col gap-2"
               >
                 {onOpenHub && (
                   <motion.button
