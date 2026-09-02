@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
-import { Home, Gamepad2, Trophy, User, Settings, Menu, X, Shield, GraduationCap, ShoppingBag, MessageCircle, Music } from 'lucide-react';
+import { Home, Gamepad2, Trophy, User, Settings, Menu, X, Shield, GraduationCap, ShoppingBag, MessageCircle, Music, Rocket } from 'lucide-react';
 import type { Profile } from '@/lib/db';
 import { useMusicContext } from './BackgroundMusic';
 
@@ -9,6 +9,7 @@ type NavProps = {
   onNavigate: (page: string) => void;
   profile: Profile | null;
   onOpenAssistant?: () => void;
+  onOpenHub?: () => void;
 };
 
 const links = [
@@ -21,7 +22,7 @@ const links = [
   { id: 'parent', label: 'Parents', icon: Shield },
 ];
 
-export default function Navbar({ current, onNavigate, profile, onOpenAssistant }: NavProps) {
+export default function Navbar({ current, onNavigate, profile, onOpenAssistant, onOpenHub }: NavProps) {
   const [open, setOpen] = useState(false);
   const { isMusicOn, toggleMusic } = useMusicContext();
   const streak = profile?.day_streak ?? 0;
@@ -87,8 +88,29 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant }
             })}
           </div>
 
-          {/* Right: streak + settings + hamburger */}
+          {/* Right: hub + streak + settings + hamburger */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {onOpenHub && (
+              <motion.button
+                onClick={onOpenHub}
+                whileHover={{ scale: 1.04, y: -1 }}
+                whileTap={{ scale: 0.96 }}
+                className="group flex items-center gap-1.5 rounded-2xl border border-white/80 bg-gradient-to-r from-sky-100/90 via-white/70 to-lavender-100/90 px-2.5 py-2 text-lavender-500 shadow-soft backdrop-blur-md sm:px-3"
+                aria-label="Return to SPACE ZONE HUB"
+                title="Return to SPACE ZONE HUB"
+              >
+                <motion.span
+                  animate={{ y: [0, -2, 0], rotate: [0, 3, -3, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="text-base"
+                >
+                  <Rocket size={17} />
+                </motion.span>
+                <span className="hidden lg:inline font-display text-xs font-bold uppercase tracking-[0.08em]">
+                  SPACE ZONE HUB
+                </span>
+              </motion.button>
+            )}
             <AnimatePresence>
               {streak > 0 && (
                 <motion.div
@@ -197,6 +219,20 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant }
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 className="md:hidden mx-auto max-w-7xl mt-2 glass-strong rounded-3xl shadow-soft-lg p-3 flex flex-col gap-1"
               >
+                {onOpenHub && (
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={() => {
+                      onOpenHub();
+                      setOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-sky-100 to-lavender-100 text-lavender-500 font-display font-bold text-base touch-target"
+                  >
+                    <Rocket size={20} />
+                    SPACE ZONE HUB
+                  </motion.button>
+                )}
                 {onOpenAssistant && (
                   <motion.button
                     initial={{ opacity: 0, x: -20 }}
