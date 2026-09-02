@@ -30,13 +30,11 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
 
   return (
     <>
-      {/* Top bar */}
       <header
         className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 pt-2 sm:pt-3"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.5rem)' }}
       >
-        <nav className="mx-auto max-w-7xl glass-strong rounded-2xl sm:rounded-3xl shadow-soft px-3 sm:px-4 py-2.5 flex items-center justify-between">
-          {/* Logo */}
+        <nav className="mx-auto max-w-7xl glass-strong rounded-2xl sm:rounded-3xl shadow-soft px-3 sm:px-4 py-2.5 flex items-center gap-4 lg:gap-6">
           <button
             onClick={() => onNavigate('home')}
             className="flex items-center gap-2 sm:gap-2.5 group shrink-0"
@@ -59,8 +57,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
             </span>
           </button>
 
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex flex-1 items-center justify-center gap-2 lg:gap-3 min-w-0">
             {links.map((l) => {
               const Icon = l.icon;
               const active = current === l.id;
@@ -68,7 +65,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                 <button
                   key={l.id}
                   onClick={() => onNavigate(l.id)}
-                  className={`relative px-4 py-2.5 rounded-2xl font-display font-medium text-sm transition-colors touch-target ${
+                  className={`relative shrink-0 px-3 lg:px-4 py-2.5 rounded-2xl font-display font-medium text-sm transition-colors touch-target ${
                     active ? 'text-white' : 'text-lavender-500 hover:text-lavender-400'
                   }`}
                 >
@@ -79,7 +76,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
-                  <span className="relative flex items-center gap-1.5">
+                  <span className="relative flex items-center gap-2 whitespace-nowrap">
                     <Icon size={16} />
                     {l.label}
                   </span>
@@ -88,8 +85,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
             })}
           </div>
 
-          {/* Right: hub + streak + settings + hamburger */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="ml-auto flex items-center gap-2 lg:gap-2.5 shrink-0">
             {onOpenHub && (
               <motion.button
                 onClick={onOpenHub}
@@ -106,7 +102,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                 >
                   <Rocket size={17} />
                 </motion.span>
-                <span className="hidden lg:inline font-display text-xs font-bold uppercase tracking-[0.08em]">
+                <span className="hidden lg:inline font-display text-xs font-bold uppercase tracking-[0.08em] whitespace-nowrap">
                   SPACE ZONE HUB
                 </span>
               </motion.button>
@@ -147,7 +143,6 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                 🪙
               </motion.span>
               <span className="font-display font-semibold text-sm text-lemon-500 relative z-10">{coins.toLocaleString()}</span>
-              {/* Shimmer sweep on hover */}
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
                 initial={{ x: '-100%' }}
@@ -201,7 +196,6 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
           </div>
         </nav>
 
-        {/* Mobile dropdown menu */}
         <AnimatePresence>
           {open && (
             <>
@@ -217,7 +211,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                className="md:hidden mx-auto max-w-7xl mt-2 glass-strong rounded-3xl shadow-soft-lg p-3 flex flex-col gap-1"
+                className="md:hidden mx-auto max-w-7xl mt-2 glass-strong rounded-3xl shadow-soft-lg p-3 flex flex-col gap-2"
               >
                 {onOpenHub && (
                   <motion.button
@@ -276,7 +270,6 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
         </AnimatePresence>
       </header>
 
-      {/* Bottom nav bar — mobile only, thumb-friendly */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-strong rounded-t-3xl shadow-soft-lg"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
