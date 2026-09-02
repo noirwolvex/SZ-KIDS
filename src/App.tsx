@@ -104,6 +104,14 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  const returnToHub = useCallback(() => {
+    setActiveGame(null);
+    setActiveLesson(null);
+    setAssistantOpen(false);
+    setPlatformHubOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const playPortalSound = useCallback(() => {
     if (typeof window === 'undefined') return;
 
@@ -201,14 +209,14 @@ export default function App() {
   return (
     <BackgroundMusic>
       <div className="min-h-screen">
-        <Navbar current={page} onNavigate={navigate} profile={profile} onOpenAssistant={() => setAssistantOpen(true)} />
+        <Navbar current={page} onNavigate={navigate} profile={profile} onOpenAssistant={() => setAssistantOpen(true)} onOpenHub={returnToHub} />
         <AnimatePresence mode="wait">
           <motion.main
             key={page}
             initial={{ opacity: 0, y: 15, scale: 0.99 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.99 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 1, 1] }}
             className="pb-16 md:pb-0"
           >
             {page === 'home' && <Home onNavigate={navigate} onPlayGame={playGame} />}
