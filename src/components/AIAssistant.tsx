@@ -24,9 +24,9 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = open !== undefined;
   const isOpen = isControlled ? open : internalOpen;
-  const setOpen = (v: boolean) => {
-    if (isControlled) onOpenChange?.(v);
-    else setInternalOpen(v);
+  const setOpen = (value: boolean) => {
+    if (isControlled) onOpenChange?.(value);
+    else setInternalOpen(value);
   };
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -51,15 +51,26 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
   }, [messages, loading, scrollToBottom]);
 
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 300);
+    if (isOpen) {
+      const timer = window.setTimeout(() => inputRef.current?.focus(), 300);
+      return () => window.clearTimeout(timer);
     }
-  }, [open]);
+  }, [isOpen]);
 
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || loading) return;
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', text: 'Please sign in again before using Owly.' },
+        ]);
+        return;
+      }
 
       const newMessages: ChatMessage[] = [...messages, { role: 'user', text: trimmed }];
       setMessages(newMessages);
@@ -68,25 +79,24 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
 
       try {
         const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
-        const { data: sessionData } = await supabase.auth.getSession();
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${sessionData.session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${accessToken}`,
             apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({
-            messages: newMessages.map((m) => ({ role: m.role, text: m.text })),
+            messages: newMessages.map((message) => ({ role: message.role, text: message.text })),
           }),
         });
 
+        const data = await response.json().catch(() => null);
         if (!response.ok) {
-          throw new Error(`Request failed (${response.status})`);
+          throw new Error(typeof data?.error === 'string' ? data.error : `Request failed (${response.status})`);
         }
 
-        const data = await response.json();
-        if (typeof data.reply !== 'string') {
+        if (typeof data?.reply !== 'string') {
           throw new Error('Unexpected response');
         }
 
@@ -108,14 +118,13 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessage(input);
+    void sendMessage(input);
   };
 
   return (
     <>
-      {/* Floating button */}
       <AnimatePresence>
-        {!open && (
+        {!isOpen && (
           <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -127,7 +136,6 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
             className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-[200] flex items-center gap-2 pl-2 pr-3 md:pr-4 py-2 rounded-2xl bg-gradient-to-br from-sky-300 to-lavender-400 shadow-soft-lg text-white"
             aria-label="Open Owly AI assistant"
           >
-            {/* Pulsing rings */}
             <motion.div
               className="absolute inset-0 rounded-2xl bg-lavender-400"
               animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
@@ -136,13 +144,11 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
             <motion.div
               className="relative w-11 h-11 md:w-12 md:h-12 rounded-xl bg-white/25 flex items-center justify-center shrink-0"
               animate={{ rotate: [0, -8, 8, 0] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{ duration: 2.5, repeat: Infinity }}
             >
               <span className="text-2xl md:text-3xl">🦉</span>
             </motion.div>
-            <span className="relative font-display font-bold text-sm md:text-base whitespace-nowrap">
-              Ask Owly
-            </span>
+            <span className="relative font-display font-bold text-sm md:text-base whitespace-nowrap">Ask Owly</span>
             <motion.div
               className="relative w-3.5 h-3.5 rounded-full bg-mint-400 border-2 border-white shrink-0"
               animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
@@ -152,9 +158,8 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
         )}
       </AnimatePresence>
 
-      {/* Chat panel */}
       <AnimatePresence>
-        {open && (
+        {isOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.85, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -162,11 +167,8 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             className="fixed bottom-4 md:bottom-6 right-4 md:right-6 z-[200] w-[calc(100vw-2rem)] sm:w-96 h-[min(70vh,560px)] glass-strong rounded-3xl shadow-soft-lg flex flex-col overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-sky-300 to-lavender-400 text-white">
-              <div className="w-10 h-10 rounded-2xl bg-white/25 flex items-center justify-center text-xl shrink-0">
-                🦉
-              </div>
+              <div className="w-10 h-10 rounded-2xl bg-white/25 flex items-center justify-center text-xl shrink-0">🦉</div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-display font-bold text-base leading-tight flex items-center gap-1.5">
                   Owly
@@ -183,32 +185,27 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
               </button>
             </div>
 
-            {/* Messages */}
-            <div
-              ref={scrollRef}
-              className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3"
-            >
-              {messages.map((msg, i) => (
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+              {messages.map((message, index) => (
                 <motion.div
-                  key={i}
+                  key={`${message.role}-${index}`}
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed font-medium ${
-                      msg.role === 'user'
+                      message.role === 'user'
                         ? 'bg-gradient-to-br from-sky-300 to-lavender-400 text-white rounded-br-md'
                         : 'bg-lavender-50 text-lavender-600 rounded-bl-md border border-lavender-100'
                     }`}
                   >
-                    {msg.text}
+                    {message.text}
                   </div>
                 </motion.div>
               ))}
 
-              {/* Loading indicator */}
               <AnimatePresence>
                 {loading && (
                   <motion.div
@@ -223,12 +220,7 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
                           key={dot}
                           className="w-2 h-2 rounded-full bg-lavender-300"
                           animate={{ y: [0, -4, 0], opacity: [0.5, 1, 0.5] }}
-                          transition={{
-                            duration: 0.8,
-                            repeat: Infinity,
-                            delay: dot * 0.15,
-                            ease: 'easeInOut',
-                          }}
+                          transition={{ duration: 0.8, repeat: Infinity, delay: dot * 0.15, ease: 'easeInOut' }}
                         />
                       ))}
                     </div>
@@ -236,7 +228,6 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
                 )}
               </AnimatePresence>
 
-              {/* Suggestion chips — only shown when chat is fresh */}
               {messages.length === 1 && !loading && (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -244,21 +235,20 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
                   transition={{ delay: 0.3 }}
                   className="flex flex-wrap gap-2 pt-2"
                 >
-                  {SUGGESTIONS.map((s) => (
+                  {SUGGESTIONS.map((suggestion) => (
                     <button
-                      key={s.label}
-                      onClick={() => sendMessage(s.label)}
+                      key={suggestion.label}
+                      onClick={() => void sendMessage(suggestion.label)}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-lavender-100 text-xs font-display font-semibold text-lavender-500 hover:border-lavender-300 hover:bg-lavender-50 transition-colors"
                     >
-                      <span className="text-sm">{s.emoji}</span>
-                      {s.label}
+                      <span className="text-sm">{suggestion.emoji}</span>
+                      {suggestion.label}
                     </button>
                   ))}
                 </motion.div>
               )}
             </div>
 
-            {/* Input */}
             <form onSubmit={handleSubmit} className="px-3 py-3 border-t border-lavender-100 bg-white/60">
               <div className="flex items-center gap-2 bg-white rounded-2xl border border-lavender-200 px-3 py-1.5 focus-within:border-lavender-400 transition-colors">
                 <MessageCircle size={18} className="text-lavender-300 shrink-0" />
@@ -266,7 +256,7 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
                   ref={inputRef}
                   type="text"
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(event) => setInput(event.target.value)}
                   placeholder="Ask Owly anything..."
                   disabled={loading}
                   maxLength={300}
