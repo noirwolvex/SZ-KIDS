@@ -34,10 +34,10 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
         className="fixed top-0 left-0 right-0 z-50 px-3 sm:px-4 pt-2 sm:pt-3"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.5rem)' }}
       >
-        <nav className="mx-auto max-w-7xl glass-strong rounded-2xl sm:rounded-3xl shadow-soft px-3 sm:px-4 py-2.5 flex items-center gap-4 lg:gap-6">
+        <nav className="mx-auto max-w-7xl glass-strong rounded-2xl sm:rounded-3xl shadow-soft px-3 sm:px-4 py-2.5 flex items-center gap-3 lg:gap-5 min-w-0">
           <button
             onClick={() => onNavigate('home')}
-            className="flex items-center gap-2 sm:gap-2.5 group shrink-0"
+            className="flex items-center gap-2 sm:gap-2.5 group shrink-0 min-w-fit"
             aria-label="Wonder Kids home"
           >
             <motion.div
@@ -52,12 +52,15 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                 transition={{ duration: 3, repeat: Infinity }}
               />
             </motion.div>
-            <span className="font-display text-lg sm:text-xl font-semibold text-lavender-500 hidden sm:block">
+            <span className="font-display text-lg sm:text-xl font-semibold text-lavender-500 hidden sm:block whitespace-nowrap">
               Wonder<span className="text-blush-400">Kids</span>
             </span>
           </button>
 
-          <div className="hidden md:flex flex-1 items-center justify-center gap-2 lg:gap-3 min-w-0">
+          <div
+            className="hidden md:flex flex-1 min-w-0 overflow-x-auto items-center justify-start gap-2 lg:gap-3 px-1"
+            style={{ scrollbarWidth: 'none' }}
+          >
             {links.map((l) => {
               const Icon = l.icon;
               const active = current === l.id;
@@ -113,7 +116,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                   initial={{ opacity: 0, scale: 0.8, y: -5 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-lemon-100 border border-lemon-200"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-lemon-100 border border-lemon-200 shrink-0"
                 >
                   <motion.span
                     animate={{ scale: [1, 1.2, 1] }}
@@ -132,7 +135,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
               animate={{ opacity: 1, scale: 1 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-gradient-to-r from-lemon-100 to-peach-100 border border-lemon-200 overflow-hidden group"
+              className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-gradient-to-r from-lemon-100 to-peach-100 border border-lemon-200 overflow-hidden group shrink-0"
               aria-label="Coins"
             >
               <motion.span
@@ -155,7 +158,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
                 onClick={onOpenAssistant}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-sky-100 to-lavender-100 text-lavender-500 font-display font-semibold text-sm hover:from-sky-200 hover:to-lavender-200 transition-colors touch-target-sm"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-sky-100 to-lavender-100 text-lavender-500 font-display font-semibold text-sm hover:from-sky-200 hover:to-lavender-200 transition-colors touch-target-sm shrink-0"
                 aria-label="Open Ask Owly AI assistant"
               >
                 <MessageCircle size={17} />
@@ -164,7 +167,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
             )}
             <button
               onClick={toggleMusic}
-              className={`p-2.5 rounded-2xl transition-colors touch-target-sm group ${
+              className={`p-2.5 rounded-2xl transition-colors touch-target-sm group shrink-0 ${
                 isMusicOn ? 'bg-lavender-100 text-lavender-600' : 'text-lavender-500 hover:bg-lavender-100 hover:text-lavender-600'
               }`}
               aria-label={isMusicOn ? 'Turn music off' : 'Turn music on'}
@@ -179,7 +182,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
             </button>
             <button
               onClick={() => onNavigate('settings')}
-              className={`p-2.5 rounded-2xl transition-colors touch-target-sm ${
+              className={`p-2.5 rounded-2xl transition-colors touch-target-sm shrink-0 ${
                 current === 'settings' ? 'bg-lavender-200 text-lavender-500' : 'text-lavender-400 hover:bg-lavender-100'
               }`}
               aria-label="Settings"
@@ -188,7 +191,7 @@ export default function Navbar({ current, onNavigate, profile, onOpenAssistant, 
             </button>
             <button
               onClick={() => setOpen(!open)}
-              className="md:hidden p-2.5 rounded-2xl text-lavender-500 hover:bg-lavender-100 touch-target-sm"
+              className="md:hidden p-2.5 rounded-2xl text-lavender-500 hover:bg-lavender-100 touch-target-sm shrink-0"
               aria-label="Menu"
             >
               {open ? <X size={22} /> : <Menu size={22} />}
