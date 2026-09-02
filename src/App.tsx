@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import { ToastContainer, showToast } from '@/components/ui';
 import Home from '@/pages/Home';
-import Games from '@/pages/Games';
+import GameZone from '@/pages/GameZone';
 import Coloring from '@/pages/Coloring';
 import Achievements from '@/pages/Achievements';
 import ParentDashboard from '@/pages/ParentDashboard';
@@ -196,7 +196,7 @@ export default function App() {
             className="pb-16 md:pb-0"
           >
             {page === 'home' && <Home onNavigate={navigate} onPlayGame={playGame} />}
-            {page === 'games' && <Games onPlayGame={playGame} />}
+            {page === 'games' && <GameZone onPlayGame={playGame} />}
             {page === 'coloring' && <Coloring />}
             {page === 'achievements' && <Achievements />}
             {page === 'parent' && <ParentDashboard />}
@@ -207,7 +207,6 @@ export default function App() {
           </motion.main>
         </AnimatePresence>
 
-        {/* Game overlay */}
         <AnimatePresence>
           {activeGame && (
             <motion.div
@@ -237,7 +236,6 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Lesson overlay */}
         <AnimatePresence>
           {activeLesson && (
             <motion.div key="lesson" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -246,15 +244,11 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Confetti */}
         <AnimatePresence>
           {confetti && <ConfettiBurst />}
         </AnimatePresence>
 
-        {/* AI Assistant chat */}
         <AIAssistant open={assistantOpen} onOpenChange={setAssistantOpen} />
-
-        {/* Toast notifications */}
         <ToastContainer />
       </div>
     </BackgroundMusic>
