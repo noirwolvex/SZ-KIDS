@@ -246,7 +246,6 @@ export async function getAllGameProgress(): Promise<GameProgress[]> {
 export async function recordGamePlay(gameId: string, stars: number, score: number | null): Promise<void> {
   const today = todayStr();
 
-  // Upsert game progress
   const existing = await getGameProgress(gameId);
   if (existing) {
     const { error } = await supabase
@@ -275,7 +274,6 @@ export async function recordGamePlay(gameId: string, stars: number, score: numbe
     if (error) throw error;
   }
 
-  // Update game stats
   const { data: stat } = await supabase
     .from('game_stats')
     .select('*')
@@ -305,7 +303,6 @@ export async function recordGamePlay(gameId: string, stars: number, score: numbe
     if (error) throw error;
   }
 
-  // Update profile XP, coins, streak
   const profile = await getProfile();
   if (profile) {
     const xpGain = stars * 50;
@@ -339,8 +336,24 @@ async function updateAchievements(gameId: string): Promise<void> {
   const profile = await getProfile();
   if (!profile) return;
 
-  const { data: progress } = await supabase.from('game_progress').select('*');
-  const gamesPlayed = progress?.length ?? 0;
+  const [{ data: progress }, { data: logs }, { data: drawings }] = await Promise.all([
+    supabase.from('game_progress').select('game_id, times_played, best_score'),
+    supabase.from('activity_log').select('game_id, created_at, detail'),
+    supabase.from('saved_drawings').select('id'),
+  ]);
+
+  const gameRows = progress ?? [];
+  const activityRows = logs ?? [];
+  const gamesPlayed = gameRows.length;
+  const memoryPlays = gameRows.find((row) => row.game_id === 'memory-match')?.times_played ?? 0;
+  const quizCorrect = activityRows
+    .filter((row) => row.game_id === 'brain-quiz')
+    .reduce((sum, row) => {
+      const match = row.detail.match(/(?:got|correct)\s+(\d+)/i);
+      return sum + (match ? Number(match[1]) : 0);
+    }, 0);
+  const artistProgress = drawings?.length ?? 0;
+  const isEarlyBird = new Date().getHours() < 8;
   const totalStars = profile.stars;
   const streak = profile.day_streak;
 
@@ -348,7 +361,11 @@ async function updateAchievements(gameId: string): Promise<void> {
     { key: 'first-steps', progress: Math.min(gamesPlayed, 1), unlocked: gamesPlayed >= 1 },
     { key: 'streak-7', progress: Math.min(streak, 7), unlocked: streak >= 7 },
     { key: 'star-collector', progress: Math.min(totalStars, 50), unlocked: totalStars >= 50 },
+    { key: 'memory-master', progress: Math.min(memoryPlays, 10), unlocked: memoryPlays >= 10 },
+    { key: 'quiz-champion', progress: Math.min(quizCorrect, 100), unlocked: quizCorrect >= 100 },
+    { key: 'artist', progress: Math.min(artistProgress, 5), unlocked: artistProgress >= 5 },
     { key: 'explorer', progress: Math.min(gamesPlayed, 15), unlocked: gamesPlayed >= 15 },
+    { key: 'early-bird', progress: isEarlyBird ? 1 : 0, unlocked: isEarlyBird },
   ];
 
   for (const u of updates) {
@@ -358,17 +375,19 @@ async function updateAchievements(gameId: string): Promise<void> {
       .eq('achievement_key', u.key)
       .maybeSingle();
 
-    if (ach) {
-      const updateData: Record<string, unknown> = {
-        progress: u.progress,
-        updated_at: new Date().toISOString(),
-      };
-      if (u.unlocked && !ach.unlocked) {
-        updateData.unlocked = true;
-        updateData.unlocked_at = new Date().toISOString();
-      }
-      await supabase.from('user_achievements').update(updateData).eq('id', ach.id);
+    if (!ach) continue;
+
+    const updateData: Record<string, unknown> = {
+      progress: u.progress,
+      total: ach.total || 1,
+      updated_at: new Date().toISOString(),
+    };
+    if (u.unlocked && !ach.unlocked) {
+      updateData.unlocked = true;
+      updateData.unlocked_at = new Date().toISOString();
     }
+    const { error } = await supabase.from('user_achievements').update(updateData).eq('id', ach.id);
+    if (error) console.error(`[achievements] failed to update ${u.key}:`, error);
   }
 }
 
@@ -473,10 +492,11 @@ export async function completeDailyChallenge(challengeKey: string): Promise<void
 
   const profile = await getProfile();
   if (profile) {
-    await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .update({ coins: profile.coins + ch.reward, updated_at: new Date().toISOString() })
       .eq('id', profile.id);
+    if (profileError) throw profileError;
   }
 }
 
@@ -546,15 +566,9 @@ export async function getActivityLog(limit: number = 10): Promise<ActivityLog[]>
 export async function addActivityLog(gameId: string, gameTitle: string, gameIcon: string, detail: string): Promise<void> {
   const { error } = await supabase
     .from('activity_log')
-    .insert({
-      game_id: gameId,
-      game_title: gameTitle,
-      game_icon: gameIcon,
-      detail,
-    });
+    .insert({ game_id: gameId, game_title: gameTitle, game_icon: gameIcon, detail });
   if (error) throw error;
 
-  // Trim old entries beyond 100
   const { data: allLogs } = await supabase
     .from('activity_log')
     .select('id')
@@ -586,11 +600,8 @@ export async function addTestimonial(name: string, text: string, avatar: string,
 }
 
 // ─── Lesson Progress ───
-
 export async function getAllLessonProgress(): Promise<LessonProgress[]> {
-  const { data, error } = await supabase
-    .from('lesson_progress')
-    .select('*');
+  const { data, error } = await supabase.from('lesson_progress').select('*');
   if (error) throw error;
   return (data ?? []) as LessonProgress[];
 }
@@ -608,46 +619,26 @@ export async function getLessonProgressById(lessonId: string): Promise<LessonPro
 export async function startLesson(lessonId: string, totalSteps: number): Promise<void> {
   const existing = await getLessonProgressById(lessonId);
   const now = new Date().toISOString();
-
   if (existing && existing.status !== 'not-started') return;
 
   if (existing) {
-    const { error } = await supabase
-      .from('lesson_progress')
-      .update({
-        status: 'in-progress',
-        started_at: now,
-        total_steps: totalSteps,
-        updated_at: now,
-      })
-      .eq('id', existing.id);
+    const { error } = await supabase.from('lesson_progress').update({
+      status: 'in-progress', started_at: now, total_steps: totalSteps, updated_at: now,
+    }).eq('id', existing.id);
     if (error) throw error;
   } else {
-    const { error } = await supabase
-      .from('lesson_progress')
-      .insert({
-        lesson_id: lessonId,
-        status: 'in-progress',
-        score: 0,
-        xp_earned: 0,
-        steps_completed: 0,
-        total_steps: totalSteps,
-        started_at: now,
-        last_step_index: 0,
-      });
+    const { error } = await supabase.from('lesson_progress').insert({
+      lesson_id: lessonId, status: 'in-progress', score: 0, xp_earned: 0,
+      steps_completed: 0, total_steps: totalSteps, started_at: now, last_step_index: 0,
+    });
     if (error) throw error;
   }
 }
 
 export async function updateLessonStep(lessonId: string, stepIndex: number, stepsCompleted: number): Promise<void> {
-  const { error } = await supabase
-    .from('lesson_progress')
-    .update({
-      last_step_index: stepIndex,
-      steps_completed: stepsCompleted,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('lesson_id', lessonId);
+  const { error } = await supabase.from('lesson_progress').update({
+    last_step_index: stepIndex, steps_completed: stepsCompleted, updated_at: new Date().toISOString(),
+  }).eq('lesson_id', lessonId);
   if (error) throw error;
 }
 
@@ -656,33 +647,22 @@ export async function completeLesson(lessonId: string, score: number, xpEarned: 
   const existing = await getLessonProgressById(lessonId);
 
   if (existing) {
-    const { error } = await supabase
-      .from('lesson_progress')
-      .update({
-        status: 'completed',
-        score: Math.max(existing.score, score),
-        xp_earned: Math.max(existing.xp_earned, xpEarned),
-        steps_completed: totalSteps,
-        total_steps: totalSteps,
-        completed_at: now,
-        updated_at: now,
-      })
-      .eq('id', existing.id);
+    const { error } = await supabase.from('lesson_progress').update({
+      status: 'completed',
+      score: Math.max(existing.score, score),
+      xp_earned: Math.max(existing.xp_earned, xpEarned),
+      steps_completed: totalSteps,
+      total_steps: totalSteps,
+      completed_at: now,
+      updated_at: now,
+    }).eq('id', existing.id);
     if (error) throw error;
   } else {
-    const { error } = await supabase
-      .from('lesson_progress')
-      .insert({
-        lesson_id: lessonId,
-        status: 'completed',
-        score,
-        xp_earned: xpEarned,
-        steps_completed: totalSteps,
-        total_steps: totalSteps,
-        started_at: now,
-        completed_at: now,
-        last_step_index: 0,
-      });
+    const { error } = await supabase.from('lesson_progress').insert({
+      lesson_id: lessonId, status: 'completed', score, xp_earned: xpEarned,
+      steps_completed: totalSteps, total_steps: totalSteps,
+      started_at: now, completed_at: now, last_step_index: 0,
+    });
     if (error) throw error;
   }
 
@@ -702,41 +682,18 @@ async function updateSkillProgress(lessonId: string): Promise<void> {
   const allLessons = getAllLessons();
   const categoryLessons = allLessons.filter((l) => l.categoryId === categoryId);
   const totalLessons = categoryLessons.length;
-  const { data: completed } = await supabase
-    .from('lesson_progress')
-    .select('lesson_id')
-    .eq('status', 'completed');
+  const { data: completed } = await supabase.from('lesson_progress').select('lesson_id').eq('status', 'completed');
   const completedIds = new Set((completed ?? []).map((l) => l.lesson_id));
   const completedCount = categoryLessons.filter((l) => completedIds.has(l.id)).length;
   const mastery = completedCount >= totalLessons ? 3 : completedCount >= Math.ceil(totalLessons * 0.66) ? 2 : completedCount >= Math.ceil(totalLessons * 0.33) ? 1 : 0;
 
   const skillKey = `category:${categoryId}`;
-  const { data: existing } = await supabase
-    .from('skill_progress')
-    .select('*')
-    .eq('skill_key', skillKey)
-    .maybeSingle();
-
+  const { data: existing } = await supabase.from('skill_progress').select('*').eq('skill_key', skillKey).maybeSingle();
   const now = new Date().toISOString();
   if (existing) {
-    await supabase
-      .from('skill_progress')
-      .update({
-        lessons_completed: completedCount,
-        total_lessons: totalLessons,
-        mastery_level: mastery,
-        updated_at: now,
-      })
-      .eq('id', existing.id);
+    await supabase.from('skill_progress').update({ lessons_completed: completedCount, total_lessons: totalLessons, mastery_level: mastery, updated_at: now }).eq('id', existing.id);
   } else {
-    await supabase
-      .from('skill_progress')
-      .insert({
-        skill_key: skillKey,
-        lessons_completed: completedCount,
-        total_lessons: totalLessons,
-        mastery_level: mastery,
-      });
+    await supabase.from('skill_progress').insert({ skill_key: skillKey, lessons_completed: completedCount, total_lessons: totalLessons, mastery_level: mastery });
   }
 }
 
@@ -745,122 +702,75 @@ async function updateProfileXp(xpEarned: number): Promise<void> {
   if (!profile) return;
   const newXp = profile.xp + xpEarned;
   const newLevel = Math.floor(newXp / 300) + 1;
-  const { error } = await supabase
-    .from('profiles')
-    .update({ xp: newXp, level: newLevel, updated_at: new Date().toISOString() })
-    .eq('id', profile.id);
+  const { error } = await supabase.from('profiles').update({ xp: newXp, level: newLevel, updated_at: new Date().toISOString() }).eq('id', profile.id);
   if (error) throw error;
 }
 
 async function addProfileCoins(amount: number): Promise<void> {
   const profile = await getProfile();
   if (!profile) return;
-  const { error } = await supabase
-    .from('profiles')
-    .update({ coins: profile.coins + amount, updated_at: new Date().toISOString() })
-    .eq('id', profile.id);
+  const { error } = await supabase.from('profiles').update({ coins: profile.coins + amount, updated_at: new Date().toISOString() }).eq('id', profile.id);
   if (error) throw error;
 }
 
 // ─── Daily Goals ───
-
 export async function getTodayDailyGoal(): Promise<DailyGoal | null> {
   const today = todayStr();
-  const { data, error } = await supabase
-    .from('daily_goals')
-    .select('*')
-    .eq('goal_date', today)
-    .maybeSingle();
+  const { data, error } = await supabase.from('daily_goals').select('*').eq('goal_date', today).maybeSingle();
   if (error) throw error;
-
   if (data) return data as DailyGoal;
 
-  const { data: newGoal, error: insertError } = await supabase
-    .from('daily_goals')
-    .insert({
-      goal_date: today,
-      target_lessons: 3,
-      lessons_completed: 0,
-      target_xp: 150,
-      xp_earned: 0,
-      completed: false,
-    })
-    .select()
-    .maybeSingle();
+  const { data: newGoal, error: insertError } = await supabase.from('daily_goals').insert({
+    goal_date: today, target_lessons: 3, lessons_completed: 0, target_xp: 150, xp_earned: 0, completed: false,
+  }).select().maybeSingle();
   if (insertError) throw insertError;
   return newGoal as DailyGoal | null;
 }
 
 async function updateDailyGoalOnLessonComplete(xpEarned: number): Promise<void> {
   const today = todayStr();
-  const { data: goal } = await supabase
-    .from('daily_goals')
-    .select('*')
-    .eq('goal_date', today)
-    .maybeSingle();
+  const { data: goal } = await supabase.from('daily_goals').select('*').eq('goal_date', today).maybeSingle();
   if (!goal) return;
 
   const newLessonsCompleted = goal.lessons_completed + 1;
   const newXpEarned = goal.xp_earned + xpEarned;
   const wasComplete = goal.completed;
   const isComplete = newLessonsCompleted >= goal.target_lessons && newXpEarned >= goal.target_xp;
-
   const updateData: Record<string, unknown> = {
-    lessons_completed: newLessonsCompleted,
-    xp_earned: newXpEarned,
-    completed: isComplete,
-    updated_at: new Date().toISOString(),
+    lessons_completed: newLessonsCompleted, xp_earned: newXpEarned, completed: isComplete, updated_at: new Date().toISOString(),
   };
 
   if (!wasComplete && isComplete) {
     const profile = await getProfile();
     if (profile) {
-      await supabase
-        .from('profiles')
-        .update({ coins: profile.coins + 50, updated_at: new Date().toISOString() })
-        .eq('id', profile.id);
+      await supabase.from('profiles').update({ coins: profile.coins + 50, updated_at: new Date().toISOString() }).eq('id', profile.id);
     }
   }
-
   await supabase.from('daily_goals').update(updateData).eq('id', goal.id);
 }
 
 export async function getRecentDailyGoals(limit: number = 7): Promise<DailyGoal[]> {
-  const { data, error } = await supabase
-    .from('daily_goals')
-    .select('*')
-    .order('goal_date', { ascending: false })
-    .limit(limit);
+  const { data, error } = await supabase.from('daily_goals').select('*').order('goal_date', { ascending: false }).limit(limit);
   if (error) throw error;
   return (data ?? []) as DailyGoal[];
 }
 
 // ─── Skill Progress ───
-
 export async function getAllSkillProgress(): Promise<SkillProgress[]> {
-  const { data, error } = await supabase
-    .from('skill_progress')
-    .select('*');
+  const { data, error } = await supabase.from('skill_progress').select('*');
   if (error) throw error;
   return (data ?? []) as SkillProgress[];
 }
 
 export async function getSkillProgressByKey(key: string): Promise<SkillProgress | null> {
-  const { data, error } = await supabase
-    .from('skill_progress')
-    .select('*')
-    .eq('skill_key', key)
-    .maybeSingle();
+  const { data, error } = await supabase.from('skill_progress').select('*').eq('skill_key', key).maybeSingle();
   if (error) throw error;
   return data as SkillProgress | null;
 }
 
 // ─── SHOP ───
 export async function getShopPurchases(): Promise<ShopPurchase[]> {
-  const { data, error } = await supabase
-    .from('shop_purchases')
-    .select('*')
-    .order('purchased_at', { ascending: false });
+  const { data, error } = await supabase.from('shop_purchases').select('*').order('purchased_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as ShopPurchase[];
 }
@@ -869,67 +779,61 @@ export async function purchaseShopItem(itemKey: string): Promise<{ success: bool
   const item = SHOP_ITEMS.find((i) => i.key === itemKey);
   if (!item) return { success: false, error: 'Item not found' };
 
-  const { data: existing } = await supabase
-    .from('shop_purchases')
-    .select('id')
-    .eq('item_key', itemKey)
-    .maybeSingle();
+  const { data: existing } = await supabase.from('shop_purchases').select('id').eq('item_key', itemKey).maybeSingle();
   if (existing) return { success: false, error: 'Already owned' };
 
   const profile = await getProfile();
   if (!profile) return { success: false, error: 'No profile' };
   if (profile.coins < item.price) return { success: false, error: 'Not enough coins' };
 
-  const { error: purchaseError } = await supabase
-    .from('shop_purchases')
-    .insert({ item_key: itemKey, item_type: item.type });
+  const { error: purchaseError } = await supabase.from('shop_purchases').insert({ item_key: itemKey, item_type: item.type });
   if (purchaseError) throw purchaseError;
 
-  const updateData: Record<string, unknown> = {
+  const { error: profileError } = await supabase.from('profiles').update({
     coins: profile.coins - item.price,
     updated_at: new Date().toISOString(),
-  };
-  if (item.type === 'avatar') {
-    updateData.avatar = item.value;
+  }).eq('id', profile.id);
+  if (profileError) {
+    await supabase.from('shop_purchases').delete().eq('item_key', itemKey);
+    throw profileError;
   }
-
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update(updateData)
-    .eq('id', profile.id);
-  if (profileError) throw profileError;
 
   return { success: true };
 }
 
 export async function equipAvatar(itemKey: string): Promise<void> {
   const item = SHOP_ITEMS.find((i) => i.key === itemKey && i.type === 'avatar');
-  if (!item) return;
+  if (!item) throw new Error('Avatar not found');
+
+  if (item.price > 0) {
+    const { data: owned } = await supabase.from('shop_purchases').select('id').eq('item_key', itemKey).maybeSingle();
+    if (!owned) throw new Error('Avatar is locked. Purchase it first.');
+  }
+
   await updateProfile({ avatar: item.value });
 }
 
 export async function equipTheme(itemKey: string): Promise<void> {
   const item = SHOP_ITEMS.find((i) => i.key === itemKey && i.type === 'theme');
-  if (!item) return;
+  if (!item) throw new Error('Theme not found');
+
+  if (item.price > 0) {
+    const { data: owned } = await supabase.from('shop_purchases').select('id').eq('item_key', itemKey).maybeSingle();
+    if (!owned) throw new Error('Theme is locked. Purchase it first.');
+  }
+
   await updateSettings({ theme: item.value });
 }
 
 // ─── SAVED DRAWINGS ───
 export async function getSavedDrawings(): Promise<SavedDrawing[]> {
-  const { data, error } = await supabase
-    .from('saved_drawings')
-    .select('*')
-    .order('updated_at', { ascending: false });
+  const { data, error } = await supabase.from('saved_drawings').select('*').order('updated_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as SavedDrawing[];
 }
 
 export async function saveDrawing(title: string, templateId: string, imageData: string): Promise<SavedDrawing | null> {
-  const { data, error } = await supabase
-    .from('saved_drawings')
-    .insert({ title, template_id: templateId, image_data: imageData })
-    .select()
-    .maybeSingle();
+  const { data, error } = await supabase.from('saved_drawings').insert({ title, template_id: templateId, image_data: imageData }).select().maybeSingle();
   if (error) throw error;
   return data as SavedDrawing | null;
 }
