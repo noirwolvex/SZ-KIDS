@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X as XIcon, Lightbulb, Volume2 } from 'lucide-react';
-import GameShell, { computeStars, type GameProps } from './GameShell';
+import GameShell, { type GameProps } from './GameShell';
+import { addActivityLog } from '@/lib/db';
 
 type Question = {
   emoji: string;
@@ -22,7 +23,6 @@ const QUESTIONS: Question[] = [
   { emoji: '🌈', prompt: 'How many colors in a rainbow?', options: ['5', '7', '10', '3'], answer: 1, hint: 'Red, orange, yellow, green, blue, indigo, violet.' },
 ];
 
-
 export default function QuizGame({ onClose, onWin }: GameProps) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -38,7 +38,8 @@ export default function QuizGame({ onClose, onWin }: GameProps) {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.9; u.pitch = 1.2;
+      u.rate = 0.9;
+      u.pitch = 1.2;
       window.speechSynthesis.speak(u);
     }
   };
@@ -58,11 +59,17 @@ export default function QuizGame({ onClose, onWin }: GameProps) {
     }
   };
 
-  const next = () => {
+  const next = async () => {
     if (idx + 1 >= QUESTIONS.length || lives <= 0) {
       setFinished(true);
       if (lives > 0) {
-        const earnedStars = score >= 6 ? 3 : score >= 4 ? 2 : 1;
+        const finalScore = score + (selected === q.answer ? 1 : 0);
+        const earnedStars = finalScore >= 6 ? 3 : finalScore >= 4 ? 2 : 1;
+        try {
+          await addActivityLog('brain-quiz', 'Brain Quiz', '💡', `Quiz completed — got ${finalScore} correct out of ${QUESTIONS.length}`);
+        } catch {
+          // Progress/awards should still use the game result if activity logging fails.
+        }
         onWin(earnedStars);
       }
       return;
@@ -74,11 +81,17 @@ export default function QuizGame({ onClose, onWin }: GameProps) {
   };
 
   const restart = () => {
-    setIdx(0); setSelected(null); setScore(0); setLives(3);
-    setShowHint(false); setFinished(false); setAnswered(false);
+    setIdx(0);
+    setSelected(null);
+    setScore(0);
+    setLives(3);
+    setShowHint(false);
+    setFinished(false);
+    setAnswered(false);
   };
 
-  const stars = score >= 6 ? 3 : score >= 4 ? 2 : 1;
+  const displayScore = score + (answered && selected === q.answer ? 1 : 0);
+  const stars = displayScore >= 6 ? 3 : displayScore >= 4 ? 2 : 1;
 
   return (
     <GameShell
@@ -89,14 +102,13 @@ export default function QuizGame({ onClose, onWin }: GameProps) {
       onRestart={restart}
       status={finished ? (lives > 0 ? 'won' : 'lost') : 'playing'}
       stars={stars}
-      winMessage={score >= 6 ? 'Amazing!' : score >= 4 ? 'Great job!' : 'Nice try!'}
-      winDetail={`You got ${score} out of ${QUESTIONS.length} correct!`}
+      winMessage={displayScore >= 6 ? 'Amazing!' : displayScore >= 4 ? 'Great job!' : 'Nice try!'}
+      winDetail={`You got ${displayScore} out of ${QUESTIONS.length} correct!`}
       stats={[
-        { icon: 'star', value: `${score}/${QUESTIONS.length}`, color: 'text-lemon-500' },
+        { icon: 'star', value: `${displayScore}/${QUESTIONS.length}`, color: 'text-lemon-500' },
         { icon: 'heart', value: `${Math.max(0, lives)}❤️`, color: 'text-blush-500' },
       ]}
     >
-      {/* Progress bar */}
       <div className="h-2.5 rounded-full bg-lavender-100 mb-6 overflow-hidden">
         <motion.div
           className="h-full rounded-full bg-gradient-to-r from-lemon-300 to-peach-400"
