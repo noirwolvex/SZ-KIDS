@@ -15,6 +15,9 @@ const SUGGESTIONS = [
   { emoji: '📖', label: 'Help me read better' },
 ];
 
+const MAX_HISTORY_MESSAGES = 12;
+const MAX_MESSAGE_LENGTH = 300;
+
 type AIAssistantProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -59,7 +62,7 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
 
   const sendMessage = useCallback(
     async (text: string) => {
-      const trimmed = text.trim();
+      const trimmed = text.trim().slice(0, MAX_MESSAGE_LENGTH);
       if (!trimmed || loading) return;
 
       const { data: sessionData } = await supabase.auth.getSession();
@@ -72,13 +75,19 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
         return;
       }
 
-      const newMessages: ChatMessage[] = [...messages, { role: 'user', text: trimmed }];
-      setMessages(newMessages);
+      const newUserMessage: ChatMessage = { role: 'user', text: trimmed };
+      const nextMessages = [...messages, newUserMessage];
+      setMessages(nextMessages);
       setInput('');
       setLoading(true);
 
       try {
         const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
+        const history = nextMessages.slice(-MAX_HISTORY_MESSAGES).map((message) => ({
+          role: message.role,
+          content: message.text,
+        }));
+
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
@@ -87,7 +96,9 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
             apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({
-            messages: newMessages.map((message) => ({ role: message.role, text: message.text })),
+            action: 'chat',
+            prompt: trimmed,
+            history: history.slice(0, -1),
           }),
         });
 
@@ -96,11 +107,17 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
           throw new Error(typeof data?.error === 'string' ? data.error : `Request failed (${response.status})`);
         }
 
-        if (typeof data?.reply !== 'string') {
+        const reply = typeof data?.reply === 'string'
+          ? data.reply.trim()
+          : typeof data?.response === 'string'
+            ? data.response.trim()
+            : '';
+
+        if (!reply) {
           throw new Error('Unexpected response');
         }
 
-        setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }]);
+        setMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
       } catch {
         setMessages((prev) => [
           ...prev,
@@ -259,7 +276,7 @@ export default function AIAssistant({ open, onOpenChange }: AIAssistantProps) {
                   onChange={(event) => setInput(event.target.value)}
                   placeholder="Ask Owly anything..."
                   disabled={loading}
-                  maxLength={300}
+                  maxLength={MAX_MESSAGE_LENGTH}
                   className="flex-1 bg-transparent outline-none text-sm text-lavender-600 font-medium placeholder:text-lavender-300 disabled:opacity-50"
                 />
                 <motion.button
