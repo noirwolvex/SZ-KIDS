@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Eraser, Palette, RotateCcw, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, Eraser, Palette, RotateCcw, Save, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { saveDrawing } from '@/lib/db';
+import { showToast } from '@/components/ui';
 
 type TemplateId = 'fox' | 'dino' | 'bunny' | 'unicorn';
 
@@ -24,6 +26,7 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(16);
   const [isEraser, setIsEraser] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     drawTemplate(templateId);
@@ -101,6 +104,22 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
     link.download = `${templateId}-wonderkids.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
+  };
+
+  const saveToCloud = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || saving) return;
+    setSaving(true);
+    try {
+      const imageData = canvas.toDataURL('image/png');
+      await saveDrawing(LABELS[templateId], templateId, imageData);
+      showToast('Picture saved to your WonderKids gallery!', 'success', '🎨');
+    } catch (error) {
+      console.error('[ColoringStudio] failed to save drawing:', error);
+      showToast('Could not save picture. Please try again.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -181,9 +200,14 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
                   </button>
                 </div>
 
-                <motion.button type="button" onClick={download} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-400 via-lavender-400 to-blush-400 px-4 py-3.5 font-display font-bold text-white shadow-soft-lg">
-                  <Download size={17} /> Save Picture
-                </motion.button>
+                <div className="grid grid-cols-1 gap-2">
+                  <motion.button type="button" onClick={saveToCloud} disabled={saving} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-mint-400 via-sky-400 to-lavender-400 px-4 py-3.5 font-display font-bold text-white shadow-soft-lg disabled:cursor-not-allowed disabled:opacity-60">
+                    <Save size={17} /> {saving ? 'Saving...' : 'Save to Gallery'}
+                  </motion.button>
+                  <motion.button type="button" onClick={download} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white/80 px-4 py-3.5 font-display font-bold text-lavender-500 shadow-soft border border-white/90">
+                    <Download size={17} /> Save to Device
+                  </motion.button>
+                </div>
               </div>
             </div>
           </div>
