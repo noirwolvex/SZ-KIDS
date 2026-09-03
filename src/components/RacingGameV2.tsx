@@ -7,8 +7,8 @@ type Lane = 0 | 1 | 2;
 type Props = { soundOn?: boolean; onDone?: () => void };
 type Bot = { id: number; lane: Lane; y: number; variant: 'red' | 'yellow' };
 
-const ROAD = 360;
-const HEIGHT = 500;
+const ROAD = 380;
+const HEIGHT = 520;
 const PLAYER_TOP = 392;
 const lanes: Lane[] = [0, 1, 2];
 
@@ -212,7 +212,7 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
       </div>
 
       <div className="mt-5 flex justify-center">
-        <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-gradient-to-b from-sky-100 via-white to-mint-100 p-3 shadow-soft-lg">
+        <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-gradient-to-b from-sky-100 via-white to-mint-100 p-3 pb-4 shadow-soft-lg">
           <div className="relative overflow-hidden rounded-[1.55rem] border-4 border-white/85 bg-gradient-to-b from-slate-300 to-slate-700" style={{ width: ROAD, height: HEIGHT }}>
             <motion.div className="absolute inset-0 opacity-75" animate={{ backgroundPositionY: ['0px', '84px'] }} transition={{ duration: 0.36, repeat: Infinity, ease: 'linear' }} style={{ backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent 42px, rgba(255,255,255,0.82) 42px, rgba(255,255,255,0.82) 84px)', backgroundSize: '8px 84px', backgroundRepeat: 'repeat-y' }} />
             <div className="absolute inset-y-0 left-0 w-3 bg-white/10" />
@@ -252,15 +252,15 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
                 </motion.div>
               </div>
             )}
-
-            {!ended && (
-              <div className="absolute inset-x-4 bottom-4 z-40 flex items-center justify-between gap-3">
-                <button type="button" onClick={() => move(-1)} className="h-12 w-12 rounded-2xl bg-white/85 text-2xl shadow-soft" aria-label="Move left">←</button>
-                <button type="button" onClick={() => { if (boost < 12) return; setBoost((value) => Math.max(0, value - 12)); setSpeed((value) => Math.min(7, value + 0.8)); tone(sound, 900, 0.1); }} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-lemon-300 to-peach-300 px-4 py-3 font-display font-black text-lavender-500 shadow-soft"><Zap size={16} fill="currentColor" /> Turbo</button>
-                <button type="button" onClick={() => move(1)} className="h-12 w-12 rounded-2xl bg-white/85 text-2xl shadow-soft" aria-label="Move right">→</button>
-              </div>
-            )}
           </div>
+
+          {!ended && (
+            <div className="mt-4 grid grid-cols-3 items-center gap-3 px-1">
+              <button type="button" onClick={() => move(-1)} className="h-12 w-full rounded-2xl bg-white/85 text-2xl shadow-soft" aria-label="Move left">←</button>
+              <button type="button" onClick={() => { if (boost < 12) return; setBoost((value) => Math.max(0, value - 12)); setSpeed((value) => Math.min(7, value + 0.8)); tone(sound, 900, 0.1); }} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-lemon-300 to-peach-300 px-4 font-display font-black text-lavender-500 shadow-soft"><Zap size={16} fill="currentColor" /> Turbo</button>
+              <button type="button" onClick={() => move(1)} className="h-12 w-full rounded-2xl bg-white/85 text-2xl shadow-soft" aria-label="Move right">→</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
