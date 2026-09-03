@@ -1,14 +1,15 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Brush, Palette, Sparkles } from 'lucide-react';
+import { ArrowRight, Brush, Palette } from 'lucide-react';
 
-type Props = { onOpenColoring: () => void };
+type TemplateId = 'fox' | 'dino' | 'bunny' | 'unicorn';
+type Props = { onOpenColoring: (templateId: TemplateId) => void };
 
 type ColoringCard = {
   title: string;
   subtitle: string;
   preview: string;
   gradient: string;
-  kind: 'fox' | 'dino' | 'bunny' | 'unicorn';
+  kind: TemplateId;
 };
 
 const cards: ColoringCard[] = [
@@ -42,7 +43,7 @@ export default function ColorDrawSection({ onOpenColoring }: Props) {
             </div>
           </div>
 
-          <motion.button type="button" onClick={onOpenColoring} whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.97 }} className="inline-flex w-fit items-center gap-3 rounded-2xl bg-gradient-to-r from-peach-400 via-blush-400 to-lavender-500 px-5 py-3.5 font-display font-bold text-white shadow-soft-lg">
+          <motion.button type="button" onClick={() => onOpenColoring('fox')} whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.97 }} className="inline-flex w-fit items-center gap-3 rounded-2xl bg-gradient-to-r from-peach-400 via-blush-400 to-lavender-500 px-5 py-3.5 font-display font-bold text-white shadow-soft-lg">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20"><Brush size={17} /></span>
             Open Drawing Studio
             <ArrowRight size={17} />
@@ -59,11 +60,11 @@ export default function ColorDrawSection({ onOpenColoring }: Props) {
   );
 }
 
-function ColorCard({ card, index, onOpenColoring }: { card: ColoringCard; index: number; onOpenColoring: () => void }) {
+function ColorCard({ card, index, onOpenColoring }: { card: ColoringCard; index: number; onOpenColoring: (templateId: TemplateId) => void }) {
   return (
     <motion.button
       type="button"
-      onClick={onOpenColoring}
+      onClick={() => onOpenColoring(card.kind)}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
@@ -87,7 +88,7 @@ function ColorCard({ card, index, onOpenColoring }: { card: ColoringCard; index:
   );
 }
 
-function CartoonOutline({ kind }: { kind: ColoringCard['kind'] }) {
+function CartoonOutline({ kind }: { kind: TemplateId }) {
   if (kind === 'dino') return <svg viewBox="0 0 300 220" className="h-full w-full" aria-hidden="true"><path d="M63 172 Q40 146 60 113 Q83 76 136 77 Q164 44 204 61 Q239 76 226 112 Q252 125 231 149 Q215 167 188 162 L170 190 L141 188 L136 158 Q108 190 82 188 Z" fill="#fffdf8" stroke="#4a3a6b" strokeWidth="8" strokeLinejoin="round"/><circle cx="194" cy="92" r="6" fill="#4a3a6b"/><circle cx="205" cy="132" r="7" fill="#c4f5e0" stroke="#4a3a6b" strokeWidth="5"/><path d="M77 100 L56 82 L71 79 L85 88 M113 72 L105 47 L121 55 L133 73 M149 65 L151 39 L166 56" fill="none" stroke="#4a3a6b" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/></svg>;
   if (kind === 'bunny') return <svg viewBox="0 0 300 220" className="h-full w-full" aria-hidden="true"><ellipse cx="151" cy="140" rx="83" ry="62" fill="#fffdf8" stroke="#4a3a6b" strokeWidth="8"/><ellipse cx="115" cy="63" rx="28" ry="60" fill="#fffdf8" stroke="#4a3a6b" strokeWidth="8" transform="rotate(-12 115 63)"/><ellipse cx="185" cy="63" rx="28" ry="60" fill="#fffdf8" stroke="#4a3a6b" strokeWidth="8" transform="rotate(12 185 63)"/><circle cx="125" cy="130" r="7" fill="#4a3a6b"/><circle cx="176" cy="130" r="7" fill="#4a3a6b"/><path d="M143 145 Q151 151 159 145 M151 149 L151 158" fill="none" stroke="#4a3a6b" strokeWidth="5" strokeLinecap="round"/><circle cx="85" cy="169" r="25" fill="#fffdf8" stroke="#4a3a6b" strokeWidth="8"/></svg>;
   if (kind === 'unicorn') return <svg viewBox="0 0 300 220" className="h-full w-full" aria-hidden="true"><path d="M74 167 Q57 120 89 94 Q119 68 169 82 Q197 66 224 84 Q241 97 230 116 Q251 127 231 148 Q211 169 174 163 Q146 191 106 185 Z" fill="#fffdf8" stroke="#4a3a6b" strokeWidth="8" strokeLinejoin="round"/><path d="M179 84 L201 33 L214 86" fill="#fffdf8" stroke="#4a3a6b" strokeWidth="8" strokeLinejoin="round"/><path d="M91 99 Q67 82 83 53 Q108 74 115 92" fill="#fffdf8" stroke="#4a3a6b" strokeWidth="8"/><circle cx="191" cy="108" r="6" fill="#4a3a6b"/><path d="M168 118 Q178 128 189 118" fill="none" stroke="#4a3a6b" strokeWidth="5" strokeLinecap="round"/><path d="M137 92 Q113 68 108 44" fill="none" stroke="#4a3a6b" strokeWidth="8" strokeLinecap="round"/></svg>;
