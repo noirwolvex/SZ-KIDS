@@ -5,9 +5,11 @@ import GameZone from '@/pages/GameZone';
 import RacingGameV2 from '@/components/RacingGameV2';
 import ColorDrawSection from '@/components/ColorDrawSection';
 
+type ColoringTemplate = 'fox' | 'dino' | 'bunny' | 'unicorn';
+
 type Props = {
   onPlayGame: (gameId: string) => void;
-  onOpenColoring: () => void;
+  onOpenColoring: (templateId: ColoringTemplate) => void;
 };
 
 function HeroCar() {
