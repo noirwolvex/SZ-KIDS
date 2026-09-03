@@ -10,6 +10,10 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import {
+  addActivityLog,
+  recordGamePlay,
+} from '@/lib/db';
 
 type MotionGame = 'star-catcher' | 'balloon-pop' | 'freeze-dance';
 
@@ -50,6 +54,15 @@ const motionGames: Array<{
     gradient: 'from-mint-200 via-sky-200 to-white',
   },
 ];
+
+async function persistMotionResult(gameId: MotionGame, title: string, score: number, stars: number) {
+  try {
+    await recordGamePlay(gameId, stars, score);
+    await addActivityLog(gameId, title, motionGames.find((game) => game.id === gameId)?.emoji ?? '🎮', `Earned ${stars} star${stars !== 1 ? 's' : ''} & ${stars * 10} coins`);
+  } catch (error) {
+    console.error(`[MotionFunSection] failed to save ${gameId} result:`, error);
+  }
+}
 
 function playTone(enabled: boolean, frequency: number, duration = 0.12, type: OscillatorType = 'sine') {
   if (!enabled || typeof window === 'undefined') return;
@@ -167,7 +180,13 @@ function StarCatcher({ soundOn, onDone }: { soundOn: boolean; onDone: () => void
   const [finished, setFinished] = useState(false);
 
   useEffect(() => { if (finished) return; const timer = window.setInterval(() => setTimeLeft((value) => (value > 0 ? value - 1 : 0)), 1000); return () => window.clearInterval(timer); }, [finished]);
-  useEffect(() => { if (timeLeft !== 0 || finished) return; setFinished(true); playSuccess(soundOn); }, [timeLeft, finished, soundOn]);
+  useEffect(() => {
+    if (timeLeft !== 0 || finished) return;
+    setFinished(true);
+    playSuccess(soundOn);
+    const stars = score >= 15 ? 3 : score >= 8 ? 2 : score > 0 ? 1 : 0;
+    void persistMotionResult('star-catcher', 'Star Catcher', score, stars);
+  }, [timeLeft, finished, soundOn, score]);
 
   const catchStar = () => { if (finished) return; setScore((value) => value + 1); setRound((value) => value + 1); playTone(soundOn, 650 + ((round % 4) * 70), 0.1, 'triangle'); };
 
@@ -182,7 +201,13 @@ function BalloonPop({ soundOn, onDone }: { soundOn: boolean; onDone: () => void 
   const [popped, setPopped] = useState<number[]>([]);
 
   useEffect(() => { if (finished) return; const timer = window.setInterval(() => setTimeLeft((value) => (value > 0 ? value - 1 : 0)), 1000); return () => window.clearInterval(timer); }, [finished]);
-  useEffect(() => { if (timeLeft !== 0 || finished) return; setFinished(true); playSuccess(soundOn); }, [timeLeft, finished, soundOn]);
+  useEffect(() => {
+    if (timeLeft !== 0 || finished) return;
+    setFinished(true);
+    playSuccess(soundOn);
+    const stars = score >= 20 ? 3 : score >= 10 ? 2 : score > 0 ? 1 : 0;
+    void persistMotionResult('balloon-pop', 'Balloon Pop', score, stars);
+  }, [timeLeft, finished, soundOn, score]);
 
   const pop = (index: number) => { if (finished || popped.includes(index)) return; setPopped((value) => [...value, index]); setScore((value) => value + 1 + Math.min(combo, 3)); setCombo((value) => value + 1); playTone(soundOn, 420 + index * 35, 0.09, 'sine'); window.setTimeout(() => setPopped((value) => value.filter((item) => item !== index)), 380); };
 
@@ -207,6 +232,12 @@ function FreezeDance({ soundOn, onDone }: { soundOn: boolean; onDone: () => void
     }
     return () => window.clearTimeout(timeoutId);
   }, [phase, soundOn]);
+
+  useEffect(() => {
+    if (phase !== 'done') return;
+    const stars = goodFreezes >= 5 ? 3 : goodFreezes >= 3 ? 2 : goodFreezes > 0 ? 1 : 0;
+    void persistMotionResult('freeze-dance', 'Freeze Dance', goodFreezes, stars);
+  }, [phase, goodFreezes]);
 
   const markFreeze = () => { if (phase !== 'freeze') return; setGoodFreezes((value) => value + 1); playTone(soundOn, 880, 0.09, 'triangle'); };
 
