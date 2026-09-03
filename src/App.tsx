@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import { ToastContainer, showToast } from '@/components/ui';
 import Home from '@/pages/Home';
 import SpaceZoneHub from '@/pages/SpaceZoneHub';
-import GameZone from '@/pages/GameZone';
+import GamesWithRacing from '@/pages/GamesWithRacing';
 import Coloring from '@/pages/Coloring';
 import Achievements from '@/pages/Achievements';
 import ParentDashboard from '@/pages/ParentDashboard';
@@ -220,7 +220,7 @@ export default function App() {
             className="pb-16 md:pb-0"
           >
             {page === 'home' && <Home onNavigate={navigate} onPlayGame={playGame} />}
-            {page === 'games' && <GameZone onPlayGame={playGame} />}
+            {page === 'games' && <GamesWithRacing onPlayGame={playGame} />}
             {page === 'coloring' && <Coloring />}
             {page === 'achievements' && <Achievements />}
             {page === 'parent' && <ParentDashboard />}
