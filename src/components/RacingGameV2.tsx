@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Gauge, Flag, Volume2, VolumeX, Zap } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { addActivityLog, recordGamePlay } from '@/lib/db';
 
 type Lane = 0 | 1 | 2;
 type Props = { soundOn?: boolean; onDone?: () => void };
@@ -99,7 +100,20 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
   const [ended, setEnded] = useState(false);
   const [crashed, setCrashed] = useState(false);
   const [muted, setMuted] = useState(!soundOn);
+  const recordedRef = useRef(false);
   const sound = soundOn && !muted;
+
+  const persistResult = useCallback(async (stars: number, score: number) => {
+    if (recordedRef.current) return;
+    recordedRef.current = true;
+    try {
+      await recordGamePlay('turbo-kids-racing', stars, score);
+      await addActivityLog('turbo-kids-racing', 'Turbo Kids Racing', '🏎️', `Earned ${stars} star${stars !== 1 ? 's' : ''} & ${stars * 10} coins`);
+    } catch (error) {
+      recordedRef.current = false;
+      console.error('[RacingGameV2] failed to save result:', error);
+    }
+  }, []);
 
   const move = useCallback((direction: -1 | 1) => {
     if (ended) return;
@@ -122,13 +136,14 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
         if (collision) {
           setCrashed(true);
           setEnded(true);
+          void persistResult(1, Math.floor(distance / 8));
           tone(sound, 150, 0.17);
         }
         return next;
       });
     }, 50);
     return () => window.clearInterval(timer);
-  }, [ended, playerLane, sound, speed]);
+  }, [ended, playerLane, sound, speed, distance, persistResult]);
 
   useEffect(() => {
     if (ended) return;
@@ -154,7 +169,8 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
     if (ended || distance < 1800) return;
     setEnded(true);
     finishTone(sound);
-  }, [distance, ended, sound]);
+    void persistResult(3, Math.floor(distance / 8));
+  }, [distance, ended, sound, persistResult]);
 
   const reset = () => {
     setPlayerLane(1);
@@ -167,6 +183,7 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
     setSpeed(1);
     setEnded(false);
     setCrashed(false);
+    recordedRef.current = false;
   };
 
   const meters = Math.floor(distance / 8);
@@ -225,31 +242,31 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-5 backdrop-blur-sm">
                 <motion.div initial={{ opacity: 0, scale: 0.82 }} animate={{ opacity: 1, scale: 1 }} className="w-full rounded-[1.75rem] border border-white/90 bg-white/92 p-6 text-center shadow-[0_25px_90px_rgba(15,23,42,0.3)]">
                   <div className="text-6xl">{crashed ? '💥' : '🏁'}</div>
-                  <h4 className="mt-3 font-display text-2xl font-bold text-lavender-500">{crashed ? 'Crash!' : 'You finished!'}</h4>
-                  <p className="mt-1 text-sm text-lavender-400">{crashed ? 'The bots are still racing. Try again!' : `Great drive — ${meters} meters.`}</p>
-                  <div className="mt-5 flex justify-center gap-2">
-                    <button type="button" onClick={reset} className="rounded-2xl bg-gradient-to-r from-sky-400 to-lavender-500 px-4 py-2.5 font-display text-sm font-bold text-white shadow-soft active:scale-95">Race again</button>
-                    <button type="button" onClick={onDone} className="rounded-2xl border border-white bg-white px-4 py-2.5 font-display text-sm font-bold text-lavender-500 shadow-sm active:scale-95">Back</button>
+                  <h4 className="mt-2 font-display text-2xl font-bold text-lavender-500">{crashed ? 'Nice try, racer!' : 'Finish line!'}</h4>
+                  <p className="mt-1 text-sm text-lavender-400">{crashed ? 'Watch the bots and try another lane.' : 'You made it to the finish!'}</p>
+                  <div className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-display font-bold text-lavender-500">Distance: {meters} m</div>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    <button type="button" onClick={reset} className="inline-flex items-center gap-2 rounded-2xl bg-lavender-400 px-4 py-3 font-display font-bold text-white shadow-soft"><Gauge size={16} /> Race again</button>
+                    <button type="button" onClick={onDone} className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 font-display font-bold text-lavender-500 shadow-soft border border-lavender-100"><Flag size={16} /> Back to Games</button>
                   </div>
                 </motion.div>
               </div>
             )}
+
+            {!ended && (
+              <div className="absolute inset-x-4 bottom-4 z-40 flex items-center justify-between gap-3">
+                <button type="button" onClick={() => move(-1)} className="h-12 w-12 rounded-2xl bg-white/85 text-2xl shadow-soft" aria-label="Move left">←</button>
+                <button type="button" onClick={() => { if (boost < 12) return; setBoost((value) => Math.max(0, value - 12)); setSpeed((value) => Math.min(7, value + 0.8)); tone(sound, 900, 0.1); }} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-lemon-300 to-peach-300 px-4 py-3 font-display font-black text-lavender-500 shadow-soft"><Zap size={16} fill="currentColor" /> Turbo</button>
+                <button type="button" onClick={() => move(1)} className="h-12 w-12 rounded-2xl bg-white/85 text-2xl shadow-soft" aria-label="Move right">→</button>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-
-      <div className="mx-auto mt-4 max-w-[540px]">
-        <div className="grid grid-cols-3 gap-2">
-          <button type="button" onClick={() => move(-1)} className="rounded-2xl border border-white/80 bg-white/75 px-3 py-3 font-display font-bold text-lavender-500 shadow-soft active:scale-95"><span className="block text-xl">◀</span><span className="text-[10px] text-lavender-300">Left</span></button>
-          <button type="button" onClick={() => { if (ended || boost < 12) return; setBoost((value) => Math.max(0, value - 12)); setSpeed((value) => Math.min(7, value + 0.8)); tone(sound, 900, 0.1); }} className="rounded-2xl bg-gradient-to-br from-lemon-200 to-peach-200 px-3 py-3 font-display font-bold text-lavender-500 shadow-soft active:scale-95"><Zap size={19} className="mx-auto" /><span className="text-xs">Boost</span></button>
-          <button type="button" onClick={() => move(1)} className="rounded-2xl border border-white/80 bg-white/75 px-3 py-3 font-display font-bold text-lavender-500 shadow-soft active:scale-95"><span className="block text-xl">▶</span><span className="text-[10px] text-lavender-300">Right</span></button>
-        </div>
-        <p className="mt-3 text-center text-xs text-lavender-300">← → / A-D to steer • Space or Boost for turbo</p>
       </div>
     </div>
   );
 }
 
 function Stat({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return <div className="rounded-2xl border border-white/80 bg-white/65 px-3 py-2 shadow-sm backdrop-blur-md"><div className="flex items-center gap-2"><span className="text-lg">{icon}</span><div className="min-w-0"><p className="text-[10px] font-display font-bold uppercase tracking-wider text-lavender-300">{label}</p><p className="truncate text-xs font-display font-bold text-lavender-500">{value}</p></div></div></div>;
+  return <div className="rounded-2xl border border-white/80 bg-white/65 px-3 py-2 shadow-sm"><div className="flex items-center gap-2 text-xs font-display font-bold text-lavender-400"><span>{icon}</span>{label}</div><p className="mt-1 font-display text-lg font-bold text-lavender-500">{value}</p></div>;
 }
