@@ -223,7 +223,7 @@ export default function App() {
         </AnimatePresence>
 
         <AnimatePresence>{activeGame && <motion.div key="game" initial={{ opacity: 0, backdropFilter: 'blur(0px)' }} animate={{ opacity: 1, backdropFilter: 'blur(12px)' }} exit={{ opacity: 0, backdropFilter: 'blur(0px)' }} transition={{ duration: 0.45, ease: [0.16, 1, 1, 1] }} className="fixed inset-0 z-50"><motion.div initial={{ scale: 0.72, opacity: 0, y: 50 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.8, opacity: 0, y: 30 }} transition={{ type: 'spring', stiffness: 220, damping: 18 }} className="absolute inset-0"><motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: [0.6, 1.04, 1], opacity: 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="absolute inset-0 bg-gradient-to-br from-lavender-200/20 via-white/10 to-sky-200/20" />{renderGame()}</motion.div></motion.div>}</AnimatePresence>
-        <AnimatePresence>{activeLesson && <motion.div key="lesson" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 1 }}><LessonView lessonId={activeLesson} onClose={closeLesson} /></motion.div>}</AnimatePresence>
+        <AnimatePresence>{activeLesson && <motion.div key="lesson" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><LessonView lessonId={activeLesson} onClose={closeLesson} /></motion.div>}</AnimatePresence>
         <AnimatePresence>{confetti && <ConfettiBurst />}</AnimatePresence>
         <AIAssistant open={assistantOpen} onOpenChange={setAssistantOpen} />
         <ToastContainer />
