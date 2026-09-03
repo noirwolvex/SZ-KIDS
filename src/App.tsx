@@ -6,6 +6,7 @@ import Home from '@/pages/Home';
 import SpaceZoneHub from '@/pages/SpaceZoneHub';
 import GamesWithRacing from '@/pages/GamesWithRacing';
 import Coloring from '@/pages/Coloring';
+import ColoringStudio from '@/components/ColoringStudio';
 import Achievements from '@/pages/Achievements';
 import ParentDashboard from '@/pages/ParentDashboard';
 import Profile from '@/pages/Profile';
@@ -49,6 +50,7 @@ import AIAssistant from '@/components/AIAssistant';
 import BackgroundMusic from '@/components/BackgroundMusic';
 
 type Page = 'home' | 'games' | 'coloring' | 'achievements' | 'parent' | 'profile' | 'settings' | 'learn' | 'shop';
+type ColoringTemplate = 'fox' | 'dino' | 'bunny' | 'unicorn';
 type GameProps = { onClose: () => void; onWin: (stars: number) => void };
 
 const GAME_COMPONENTS: Record<string, (props: GameProps) => JSX.Element> = {
@@ -85,6 +87,7 @@ export default function App() {
   const [platformHubOpen, setPlatformHubOpen] = useState(true);
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
+  const [coloringStudioTemplate, setColoringStudioTemplate] = useState<ColoringTemplate | null>(null);
   const [confetti, setConfetti] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const { profile, refresh: refreshProfile } = useProfile();
@@ -94,10 +97,20 @@ export default function App() {
     setPage(p as Page);
     setActiveGame(null);
     setActiveLesson(null);
+    setColoringStudioTemplate(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const openColoring = useCallback(() => {
+    setColoringStudioTemplate(null);
+    setPage('coloring');
+    setActiveGame(null);
+    setActiveLesson(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const openColoringStudio = useCallback((templateId: ColoringTemplate) => {
+    setColoringStudioTemplate(templateId);
     setPage('coloring');
     setActiveGame(null);
     setActiveLesson(null);
@@ -113,6 +126,7 @@ export default function App() {
   const returnToHub = useCallback(() => {
     setActiveGame(null);
     setActiveLesson(null);
+    setColoringStudioTemplate(null);
     setAssistantOpen(false);
     setPlatformHubOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -197,8 +211,8 @@ export default function App() {
         <AnimatePresence mode="wait">
           <motion.main key={page} initial={{ opacity: 0, y: 15, scale: 0.99 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.99 }} transition={{ duration: 0.35, ease: [0.16, 1, 1, 1] }} className="pb-16 md:pb-0">
             {page === 'home' && <Home onNavigate={navigate} onPlayGame={playGame} />}
-            {page === 'games' && <GamesWithRacing onPlayGame={playGame} onOpenColoring={openColoring} />}
-            {page === 'coloring' && <Coloring />}
+            {page === 'games' && <GamesWithRacing onPlayGame={playGame} onOpenColoring={openColoringStudio} />}
+            {page === 'coloring' && (coloringStudioTemplate ? <ColoringStudio templateId={coloringStudioTemplate} onBack={() => navigate('games')} /> : <Coloring />)}
             {page === 'achievements' && <Achievements />}
             {page === 'parent' && <ParentDashboard />}
             {page === 'profile' && <Profile onNavigate={navigate} />}
@@ -209,7 +223,7 @@ export default function App() {
         </AnimatePresence>
 
         <AnimatePresence>{activeGame && <motion.div key="game" initial={{ opacity: 0, backdropFilter: 'blur(0px)' }} animate={{ opacity: 1, backdropFilter: 'blur(12px)' }} exit={{ opacity: 0, backdropFilter: 'blur(0px)' }} transition={{ duration: 0.45, ease: [0.16, 1, 1, 1] }} className="fixed inset-0 z-50"><motion.div initial={{ scale: 0.72, opacity: 0, y: 50 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.8, opacity: 0, y: 30 }} transition={{ type: 'spring', stiffness: 220, damping: 18 }} className="absolute inset-0"><motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: [0.6, 1.04, 1], opacity: 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="absolute inset-0 bg-gradient-to-br from-lavender-200/20 via-white/10 to-sky-200/20" />{renderGame()}</motion.div></motion.div>}</AnimatePresence>
-        <AnimatePresence>{activeLesson && <motion.div key="lesson" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><LessonView lessonId={activeLesson} onClose={closeLesson} /></motion.div>}</AnimatePresence>
+        <AnimatePresence>{activeLesson && <motion.div key="lesson" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 1 }}><LessonView lessonId={activeLesson} onClose={closeLesson} /></motion.div>}</AnimatePresence>
         <AnimatePresence>{confetti && <ConfettiBurst />}</AnimatePresence>
         <AIAssistant open={assistantOpen} onOpenChange={setAssistantOpen} />
         <ToastContainer />
