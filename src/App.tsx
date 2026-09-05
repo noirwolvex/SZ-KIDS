@@ -208,19 +208,17 @@ export default function App() {
     <BackgroundMusic>
       <div className="min-h-screen">
         <Navbar current={page} onNavigate={navigate} profile={profile} onOpenAssistant={() => setAssistantOpen(true)} onOpenHub={returnToHub} />
-        <AnimatePresence mode="wait">
-          <motion.main key={page} initial={{ opacity: 0, y: 15, scale: 0.99 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.99 }} transition={{ duration: 0.35, ease: [0.16, 1, 1, 1] }} className="pb-16 md:pb-0">
-            {page === 'home' && <Home onNavigate={navigate} onPlayGame={playGame} />}
-            {page === 'games' && <GamesWithRacing onPlayGame={playGame} onOpenColoring={openColoringStudio} />}
-            {page === 'coloring' && (coloringStudioTemplate ? <ColoringStudio templateId={coloringStudioTemplate} onBack={() => navigate('games')} /> : <Coloring />)}
-            {page === 'achievements' && <Achievements />}
-            {page === 'parent' && <ParentDashboard />}
-            {page === 'profile' && <Profile onNavigate={navigate} />}
-            {page === 'settings' && <Settings />}
-            {page === 'shop' && <Shop />}
-            {page === 'learn' && <LearnHub onOpenLesson={openLesson} />}
-          </motion.main>
-        </AnimatePresence>
+        <main key={page} className="pb-16 md:pb-0">
+          {page === 'home' && <Home onNavigate={navigate} onPlayGame={playGame} />}
+          {page === 'games' && <GamesWithRacing onPlayGame={playGame} onOpenColoring={openColoringStudio} />}
+          {page === 'coloring' && (coloringStudioTemplate ? <ColoringStudio templateId={coloringStudioTemplate} onBack={() => navigate('games')} /> : <Coloring />)}
+          {page === 'achievements' && <Achievements />}
+          {page === 'parent' && <ParentDashboard />}
+          {page === 'profile' && <Profile onNavigate={navigate} />}
+          {page === 'settings' && <Settings />}
+          {page === 'shop' && <Shop />}
+          {page === 'learn' && <LearnHub onOpenLesson={openLesson} />}
+        </main>
 
         <AnimatePresence>{activeGame && <motion.div key="game" initial={{ opacity: 0, backdropFilter: 'blur(0px)' }} animate={{ opacity: 1, backdropFilter: 'blur(12px)' }} exit={{ opacity: 0, backdropFilter: 'blur(0px)' }} transition={{ duration: 0.45, ease: [0.16, 1, 1, 1] }} className="fixed inset-0 z-50"><motion.div initial={{ scale: 0.72, opacity: 0, y: 50 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.8, opacity: 0, y: 30 }} transition={{ type: 'spring', stiffness: 220, damping: 18 }} className="absolute inset-0"><motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: [0.6, 1.04, 1], opacity: 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="absolute inset-0 bg-gradient-to-br from-lavender-200/20 via-white/10 to-sky-200/20" />{renderGame()}</motion.div></motion.div>}</AnimatePresence>
         <AnimatePresence>{activeLesson && <motion.div key="lesson" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><LessonView lessonId={activeLesson} onClose={closeLesson} /></motion.div>}</AnimatePresence>
