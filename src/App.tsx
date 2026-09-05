@@ -40,6 +40,7 @@ import StoryBuilder from '@/pages/games/StoryBuilder';
 import LogicGrid from '@/pages/games/LogicGrid';
 import DivisionMaster from '@/pages/games/DivisionMaster';
 import WordChain from '@/pages/games/WordChain';
+import SpaceRunner from '@/pages/games/SpaceRunner';
 import { games, getGameById } from '@/data/content';
 import { recordGamePlay, addActivityLog } from '@/lib/db';
 import { useProfile } from '@/lib/hooks';
@@ -80,6 +81,7 @@ const GAME_COMPONENTS: Record<string, (props: GameProps) => JSX.Element> = {
   'logic-grid': LogicGrid,
   'divide-master': DivisionMaster,
   'word-chain': WordChain,
+  'space-runner': SpaceRunner,
 };
 
 export default function App() {
@@ -160,9 +162,10 @@ export default function App() {
   }, []);
 
   const playGame = useCallback((gameId: string) => {
+    const isSpecialGame = gameId === 'space-runner';
     const game = games.find((g) => g.id === gameId);
-    if (!game) return;
-    if (game.type === 'coloring') {
+    if (!game && !isSpecialGame) return;
+    if (game?.type === 'coloring') {
       openColoring();
       return;
     }
