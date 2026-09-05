@@ -183,7 +183,7 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
       setCountdown(next);
       if (next > 0) tone(sound, next === 1 ? 700 : 560, 0.1);
       else {
-        setBanner('GO!');
+        setBanner('Race!');
         tone(sound, 880, 0.14);
       }
     }, 800);
@@ -400,10 +400,10 @@ export default function RacingGameV2({ soundOn = true, onDone }: Props) {
               <span className="rounded-full border border-white/75 bg-white/80 px-3 py-1 text-[10px] font-display font-bold uppercase tracking-wider text-lavender-500 shadow-sm"><Flag size={12} className="mr-1 inline" /> Finish 225 m</span>
             </motion.div>
 
-            {!ended && countdown !== null && (
+            {!ended && countdown !== null && countdown > 0 && (
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/10 p-5 backdrop-blur-[2px]">
                 <motion.div key={countdown} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
-                  <div className="text-7xl font-display font-black text-white drop-shadow-[0_6px_20px_rgba(79,70,229,0.35)]">{countdown === 0 ? 'GO!' : countdown}</div>
+                  <div className="text-7xl font-display font-black text-white drop-shadow-[0_6px_20px_rgba(79,70,229,0.35)]">{countdown}</div>
                   <p className="mt-2 rounded-full bg-white/80 px-4 py-2 text-xs font-display font-bold text-lavender-500 shadow-sm">{banner}</p>
                 </motion.div>
               </div>
@@ -463,5 +463,5 @@ function Stat({ icon, label, value }: { icon: string; label: string; value: stri
 }
 
 function MiniResult({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return <div className="rounded-2xl bg-sky-50 px-3 py-2 text-left"><div className="flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-wider text-lavender-300">{icon}{label}</div><p className="mt-1 font-display text-lg font-bold text-lavender-500">{value}</p></div>;
+  return <div className="rounded-2xl bg-sky-50 px-3 py-2 text-left"><div className="flex items-center gap-2 text-[10px] font-display font-bold uppercase tracking-wider text-lavender-300">{icon}{label}</div><p className="mt-1 font-display text-base font-bold text-lavender-500">{value}</p></div>;
 }
