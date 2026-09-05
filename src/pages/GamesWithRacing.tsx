@@ -63,7 +63,7 @@ function SpaceRunnerPreview() {
   );
 }
 
-function SpaceRunnerSection() {
+function SpaceRunnerSection({ onPlayGame }: { onPlayGame: (gameId: string) => void }) {
   return (
     <section className="relative mx-4 mb-6 mt-2 overflow-hidden rounded-[2.5rem] border border-white/90 bg-white/45 p-4 shadow-[0_30px_90px_rgba(86,74,148,0.14)] backdrop-blur-2xl sm:mx-6 sm:p-6 lg:mx-auto lg:max-w-7xl lg:p-8">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -85,14 +85,14 @@ function SpaceRunnerSection() {
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex items-center gap-2 rounded-2xl border border-sky-200/15 bg-sky-300/10 px-4 py-3 text-sm font-bold text-sky-100"><Star size={17} className="text-yellow-300" /> Built for quick play</div>
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-violet-100"><Rocket size={17} /> Coming next</div>
+              <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-violet-100"><Rocket size={17} /> Play now</div>
             </div>
           </div>
           <SpaceRunnerPreview />
         </div>
         <div className="relative mt-7 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between">
-          <div><p className="font-display text-sm font-bold text-white">Your next adventure is loading.</p><p className="mt-1 text-xs text-slate-400">An original endless-runner experience — no copied characters or assets.</p></div>
-          <button type="button" disabled className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-slate-400"><Rocket size={16} /> Coming Soon <ArrowRight size={16} /></button>
+          <div><p className="font-display text-sm font-bold text-white">Your next adventure is ready.</p><p className="mt-1 text-xs text-slate-400">Original endless-runner gameplay — dodge, collect, boost and chase your high score.</p></div>
+          <button type="button" onClick={() => onPlayGame('space-runner')} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-400 px-5 py-3 text-sm font-bold text-slate-950 shadow-[0_12px_30px_rgba(56,189,248,0.3)] transition-all hover:-translate-y-0.5 hover:bg-sky-300 active:scale-[0.98]"><Rocket size={16} /> Play SPACE RUNNER <ArrowRight size={16} /></button>
         </div>
       </div>
     </section>
@@ -105,19 +105,33 @@ export default function GamesWithRacing({ onPlayGame, onOpenColoring }: Props) {
   return (
     <div>
       <GameZone onPlayGame={onPlayGame} />
-      <SpaceRunnerSection />
+      <SpaceRunnerSection onPlayGame={onPlayGame} />
       <section className="relative mx-4 mb-24 mt-2 overflow-hidden rounded-[2.5rem] border border-white/90 bg-white/45 p-4 shadow-[0_30px_90px_rgba(86,74,148,0.14)] backdrop-blur-2xl sm:mx-6 sm:p-6 lg:mx-auto lg:max-w-7xl lg:p-8">
         <div className="pointer-events-none absolute inset-0 overflow-hidden"><motion.div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-sky-200/35 blur-3xl" animate={{ x: [0, 35, 0], y: [0, 20, 0], scale: [1, 1.15, 1] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} /><motion.div className="absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-lavender-200/35 blur-3xl" animate={{ x: [0, -28, 0], scale: [1, 1.12, 1] }} transition={{ duration: 9, repeat: Infinity }} /></div>
-        <div className="relative overflow-hidden rounded-[2.1rem] bg-gradient-to-br from-sky-100 via-lavender-100 to-mint-100 p-5 sm:p-8">
-          <div className="grid items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div><div className="flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-2 rounded-full border border-white/85 bg-white/70 px-3 py-1.5 text-[11px] font-display font-bold uppercase tracking-[0.16em] text-lavender-500"><Sparkles size={14} /> Turbo Track</span><span className="inline-flex items-center gap-1.5 rounded-full bg-white/60 px-3 py-1.5 text-[11px] font-display font-bold text-lavender-400"><Gauge size={13} /> Action racing</span></div><h2 className="mt-4 font-display text-3xl font-bold leading-tight text-lavender-500 sm:text-4xl">Race with the Bots.</h2><p className="mt-3 max-w-xl text-sm leading-relaxed text-lavender-400 sm:text-base">A fast, friendly arcade race with a big car, moving track, two AI racers and a turbo boost made for quick play.</p><div className="mt-5 flex flex-wrap gap-2"><BotDriver name="Bolt Bot" color="#dbeafe" /><BotDriver name="Sunny Bot" color="#fef3c7" /></div><motion.button type="button" onClick={() => setRacingOpen(true)} whileHover={{ y: -4, scale: 1.015 }} whileTap={{ scale: 0.98 }} className="mt-6 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-sky-400 via-lavender-400 to-lavender-500 px-5 py-3.5 font-display font-bold text-white shadow-soft-lg"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20"><Flag size={17} /></span>Start Racing<span>→</span></motion.button></div>
-            <div className="relative flex items-center justify-center rounded-[2rem] border border-white/70 bg-white/30 p-3 shadow-soft backdrop-blur-xl sm:p-5"><div className="absolute inset-x-8 bottom-4 h-16 rounded-full bg-lavender-400/15 blur-3xl" /><HeroCar /><motion.div className="absolute right-3 top-3 rounded-2xl border border-white/80 bg-white/75 px-3 py-2 text-xs font-display font-bold text-lavender-500 shadow-sm" animate={{ y: [0, -4, 0] }} transition={{ duration: 2.2, repeat: Infinity }}>🏁 225 m finish</motion.div></div>
+        <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_0.9fr]">
+          <div>
+            <div className="flex items-center gap-2 text-lavender-300 font-display font-bold text-sm uppercase tracking-[0.16em]"><Flag size={18} className="text-sky-400" /> Turbo Track</div>
+            <h2 className="mt-3 font-display text-3xl sm:text-4xl font-black text-lavender-500">Ready, set, race!</h2>
+            <p className="mt-3 max-w-2xl text-sm sm:text-base text-lavender-400 leading-relaxed">Race against AI drivers, collect boost energy and finish first in this colorful family-friendly track.</p>
+            <div className="mt-6 flex flex-wrap items-center gap-3"><BotDriver color="#e0f2fe" name="Nova" /><BotDriver color="#ede9fe" name="Pixel" /><BotDriver color="#dcfce7" name="Comet" /></div>
+            <button onClick={() => setRacingOpen(true)} className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-lavender-500 px-5 py-3 text-sm font-display font-bold text-white shadow-soft transition-all hover:-translate-y-0.5 hover:bg-lavender-400 active:scale-[0.98]"><Gauge size={18} /> Launch Turbo Track</button>
           </div>
-          <div className="relative mt-7 grid gap-3 sm:grid-cols-3">{[{ icon: '🚗', title: 'Real racing car', text: 'Large illustrated car' }, { icon: '🤖', title: '2 AI racers', text: 'Bot opponents on track' }, { icon: '⚡', title: 'Turbo boost', text: 'Speed up your run' }].map((item, index) => <motion.div key={item.title} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }} className="rounded-2xl border border-white/80 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-md"><div className="flex items-center gap-3"><span className="text-2xl">{item.icon}</span><div><p className="text-[11px] font-display font-bold text-lavender-500">{item.title}</p><p className="text-xs text-lavender-300">{item.text}</p></div></div></motion.div>)}</div>
+          <HeroCar />
         </div>
       </section>
-      <ColorDrawSection onOpenColoring={onOpenColoring} />
-      <AnimatePresence>{racingOpen && <motion.div className="fixed inset-0 z-[100] flex items-center justify-center bg-lavender-950/25 p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><motion.div initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.97 }} transition={{ type: 'spring', stiffness: 250, damping: 22 }} className="relative max-h-[94vh] w-full max-w-5xl overflow-auto rounded-[2rem] border border-white/90 bg-white/80 p-3 shadow-[0_35px_120px_rgba(54,45,110,0.26)] backdrop-blur-2xl sm:p-5"><RacingGameV2 soundOn onDone={() => setRacingOpen(false)} /></motion.div></motion.div>}</AnimatePresence>
+
+      <div className="mb-24"><ColorDrawSection onOpenColoring={onOpenColoring} /></div>
+
+      <AnimatePresence>
+        {racingOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[120] flex items-center justify-center bg-lavender-500/30 backdrop-blur-md p-3 sm:p-6">
+            <motion.div initial={{ scale: 0.92, y: 24, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.92, y: 24, opacity: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }} className="relative w-full max-w-5xl max-h-[94vh] overflow-y-auto rounded-[2rem] bg-cream shadow-soft-lg">
+              <button onClick={() => setRacingOpen(false)} className="absolute right-3 top-3 z-20 rounded-full bg-white/70 p-2.5 text-lavender-500 backdrop-blur-sm hover:bg-white" aria-label="Close racing game">×</button>
+              <RacingGameV2 onClose={() => setRacingOpen(false)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
