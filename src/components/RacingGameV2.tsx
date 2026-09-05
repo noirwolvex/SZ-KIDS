@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Flag, Gauge, Medal, Pause, Play, RotateCcw, Volume2, VolumeX, Zap } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { addActivityLog, recordGamePlay } from '@/lib/db';
 
 type Lane = 0 | 1 | 2;
@@ -461,6 +462,6 @@ function Stat({ icon, label, value }: { icon: string; label: string; value: stri
   return <div className="rounded-2xl border border-white/80 bg-white/65 px-3 py-2 shadow-sm"><div className="flex items-center gap-2 text-xs font-display font-bold text-lavender-400"><span>{icon}</span>{label}</div><p className="mt-1 font-display text-lg font-bold text-lavender-500">{value}</p></div>;
 }
 
-function MiniResult({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function MiniResult({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return <div className="rounded-2xl bg-sky-50 px-3 py-2 text-left"><div className="flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-wider text-lavender-300">{icon}{label}</div><p className="mt-1 font-display text-lg font-bold text-lavender-500">{value}</p></div>;
 }
