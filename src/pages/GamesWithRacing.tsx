@@ -9,7 +9,7 @@ type ColoringTemplate = 'fox' | 'dino' | 'bunny' | 'unicorn';
 
 type Props = {
   onPlayGame: (gameId: string) => void;
-  onOpenColoring: (templateId: ColoringTemplate) => void;
+  onOpenColoring: (templateId: any) => void;
 };
 
 function HeroCar() {
