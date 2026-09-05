@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Download, Eraser, Palette, RotateCcw, Save, Sparkles } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { saveDrawing } from '@/lib/db';
 import { showToast } from '@/components/ui';
 
@@ -27,20 +27,25 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
   const [brushSize, setBrushSize] = useState(16);
   const [isEraser, setIsEraser] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
 
-  useEffect(() => {
-    drawTemplate(templateId);
-  }, [templateId]);
-
-  const drawTemplate = (id: TemplateId) => {
+  const drawTemplate = useCallback((id: TemplateId) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return false;
+
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return false;
+
     canvas.width = 900;
     canvas.height = 680;
+    canvas.style.width = '100%';
+    canvas.style.height = 'auto';
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#fffbf5';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     ctx.save();
     ctx.translate(100, 40);
     ctx.scale(2.3, 2.3);
@@ -50,10 +55,26 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
     ctx.lineCap = 'round';
     renderOutline(ctx, id);
     ctx.restore();
-  };
+
+    return true;
+  }, []);
+
+  useLayoutEffect(() => {
+    setCanvasReady(false);
+    let frame = 0;
+
+    const paint = () => {
+      const painted = drawTemplate(templateId);
+      if (painted) setCanvasReady(true);
+    };
+
+    frame = window.requestAnimationFrame(paint);
+    return () => window.cancelAnimationFrame(frame);
+  }, [drawTemplate, templateId]);
 
   const getPos = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current!;
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     const point = 'touches' in e ? e.touches[0] : e;
     return {
@@ -64,9 +85,11 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !canvasReady) return;
+
     drawingRef.current = true;
-    const ctx = canvasRef.current?.getContext('2d');
-    if (!ctx) return;
     const { x, y } = getPos(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -81,6 +104,7 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
     e.preventDefault();
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
+
     const { x, y } = getPos(e);
     ctx.strokeStyle = isEraser ? '#fffbf5' : color;
     ctx.lineWidth = isEraser ? brushSize * 2.5 : brushSize;
@@ -95,7 +119,10 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
     canvasRef.current?.getContext('2d')?.beginPath();
   };
 
-  const clear = () => drawTemplate(templateId);
+  const clear = () => {
+    drawTemplate(templateId);
+    setCanvasReady(true);
+  };
 
   const download = () => {
     const canvas = canvasRef.current;
@@ -150,14 +177,21 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
                 </div>
               </div>
               <div className="inline-flex items-center gap-2 rounded-2xl bg-white/75 px-3 py-2 text-xs font-display font-bold text-lavender-400">
-                <Sparkles size={14} /> New character canvas
+                <Sparkles size={14} /> {canvasReady ? 'Ready to color' : 'Preparing your picture...'}
               </div>
             </div>
 
             <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_250px]">
-              <div className="rounded-[1.7rem] border border-white/90 bg-white/75 p-3 shadow-soft backdrop-blur-xl sm:p-5">
+              <div className="relative rounded-[1.7rem] border border-white/90 bg-white/75 p-3 shadow-soft backdrop-blur-xl sm:p-5">
+                {!canvasReady && (
+                  <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-[1.25rem] bg-white/70 backdrop-blur-sm">
+                    <div className="rounded-2xl bg-white/90 px-4 py-3 font-display text-sm font-bold text-lavender-500 shadow-soft">Loading picture… ✨</div>
+                  </div>
+                )}
                 <canvas
                   ref={canvasRef}
+                  width={900}
+                  height={680}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
                   onMouseUp={stopDrawing}
@@ -165,7 +199,7 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
                   onTouchStart={startDrawing}
                   onTouchMove={draw}
                   onTouchEnd={stopDrawing}
-                  className="w-full rounded-[1.25rem] bg-[#fffbf5] shadow-inner touch-none cursor-crosshair"
+                  className="block w-full rounded-[1.25rem] bg-[#fffbf5] shadow-inner touch-none cursor-crosshair"
                   style={{ aspectRatio: '900 / 680' }}
                 />
               </div>
@@ -201,10 +235,10 @@ export default function ColoringStudio({ templateId, onBack }: Props) {
                 </div>
 
                 <div className="grid grid-cols-1 gap-2">
-                  <motion.button type="button" onClick={saveToCloud} disabled={saving} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-mint-400 via-sky-400 to-lavender-400 px-4 py-3.5 font-display font-bold text-white shadow-soft-lg disabled:cursor-not-allowed disabled:opacity-60">
+                  <motion.button type="button" onClick={saveToCloud} disabled={saving || !canvasReady} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-mint-400 via-sky-400 to-lavender-400 px-4 py-3.5 font-display font-bold text-white shadow-soft-lg disabled:cursor-not-allowed disabled:opacity-60">
                     <Save size={17} /> {saving ? 'Saving...' : 'Save to Gallery'}
                   </motion.button>
-                  <motion.button type="button" onClick={download} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white/80 px-4 py-3.5 font-display font-bold text-lavender-500 shadow-soft border border-white/90">
+                  <motion.button type="button" onClick={download} disabled={!canvasReady} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white/80 px-4 py-3.5 font-display font-bold text-lavender-500 shadow-soft border border-white/90 disabled:cursor-not-allowed disabled:opacity-60">
                     <Download size={17} /> Save to Device
                   </motion.button>
                 </div>
