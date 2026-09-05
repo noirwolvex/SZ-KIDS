@@ -29,12 +29,13 @@ export type GameShellProps = {
   loseMessage?: string;
   winDetail?: string;
   difficultySelector?: ReactNode;
+  wide?: boolean;
 };
 
 export default function GameShell({
   title, gradient, emoji, onClose, onRestart, stats, children, status, stars,
   winMessage = 'You did it!', loseMessage = 'Good try!', winDetail,
-  difficultySelector,
+  difficultySelector, wide = false,
 }: GameShellProps) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-lavender-500/30 backdrop-blur-md">
@@ -43,14 +44,13 @@ export default function GameShell({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="w-full max-w-2xl bg-cream rounded-3xl sm:rounded-5xl shadow-soft-lg overflow-hidden relative max-h-[94vh] flex flex-col"
+        className={`w-full ${wide ? 'max-w-6xl' : 'max-w-2xl'} bg-cream rounded-3xl sm:rounded-5xl shadow-soft-lg overflow-hidden relative max-h-[94vh] flex flex-col`}
       >
         {/* Decorative top glow */}
         <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradient} opacity-80`} />
 
         {/* Header */}
         <div className={`relative flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r ${gradient} shrink-0 overflow-hidden`}>
-          {/* Floating decorative shapes */}
           <motion.div
             className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10"
             animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
@@ -101,20 +101,14 @@ export default function GameShell({
           </motion.button>
         </div>
 
-        {/* Difficulty */}
         {difficultySelector && (
           <div className="flex justify-center gap-2 px-4 sm:px-6 pt-3 sm:pt-4 shrink-0">{difficultySelector}</div>
         )}
 
-        {/* Animated game icon */}
         {emoji && (
           <div className="relative flex justify-center pt-2 sm:pt-3 px-4 shrink-0">
             <motion.div
-              animate={{
-                y: [0, -10, 0],
-                rotate: [0, -8, 8, 0],
-                scale: [1, 1.12, 1],
-              }}
+              animate={{ y: [0, -10, 0], rotate: [0, -8, 8, 0], scale: [1, 1.12, 1] }}
               transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
               className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-3xl bg-white/70 shadow-soft border border-white/80 backdrop-blur-sm"
             >
@@ -123,10 +117,8 @@ export default function GameShell({
           </div>
         )}
 
-        {/* Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 no-scrollbar">{children}</div>
+        <div className={`p-4 sm:p-6 overflow-y-auto flex-1 no-scrollbar ${wide ? 'sm:p-7 lg:p-9' : ''}`}>{children}</div>
 
-        {/* Win / Lose overlay */}
         <AnimatePresence>
           {status === 'won' && (
             <motion.div
@@ -135,7 +127,6 @@ export default function GameShell({
               exit={{ opacity: 0 }}
               className="absolute inset-0 flex items-center justify-center bg-cream/95 backdrop-blur-md z-10 overflow-y-auto py-8"
             >
-              {/* Celebration sparkles */}
               {[...Array(8)].map((_, i) => (
                 <motion.div
                   key={i}
@@ -153,10 +144,7 @@ export default function GameShell({
                 transition={{ type: 'spring', stiffness: 200, damping: 18 }}
                 className="text-center relative z-10 flex flex-col items-center gap-6 sm:gap-8 p-8 sm:p-10"
               >
-                <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                >
+                <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
                   <Mascot size={130} expression="excited" className="mx-auto w-[100px] h-[100px] sm:w-[130px] sm:h-[130px]" />
                 </motion.div>
                 <div>
@@ -186,12 +174,7 @@ export default function GameShell({
                     ))}
                   </div>
                   {winDetail && (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 1 }}
-                      className="text-lavender-400 font-semibold"
-                    >
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="text-lavender-400 font-semibold">
                       {winDetail}
                     </motion.p>
                   )}
@@ -212,7 +195,7 @@ export default function GameShell({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 1 }}
               className="absolute inset-0 flex items-center justify-center bg-cream/95 backdrop-blur-md z-10 overflow-y-auto py-8"
             >
               <motion.div
@@ -221,13 +204,7 @@ export default function GameShell({
                 transition={{ type: 'spring', stiffness: 200, damping: 18 }}
                 className="text-center relative z-10 flex flex-col items-center gap-5 sm:gap-6 p-8 sm:p-10"
               >
-                <motion.div
-                  animate={{ rotate: [0, -10, 10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="text-5xl sm:text-7xl"
-                >
-                  🦉
-                </motion.div>
+                <motion.div animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-5xl sm:text-7xl">🦉</motion.div>
                 <div>
                   <h3 className="font-display text-xl sm:text-2xl font-bold text-lavender-500">{loseMessage}</h3>
                   <p className="text-lavender-400 mt-2 text-sm sm:text-base">Don't worry — you're learning! Want to give it another go?</p>
